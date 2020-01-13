@@ -1,0 +1,103 @@
+---
+title: "Simultaneous two-sample testing"
+author: "Nikos Ignatiadis"
+date: "1/12/2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Setup
+
+### Load packages
+
+```{r  message=FALSE,result=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(cowplot)
+```
+
+## Colors and method names used throughout 
+
+```{r}
+# (from https://github.com/dill/beyonce)
+beyonce_colors <- c("#b72da0", "#7c5bd2", "#0097ed","#00c6c3",
+                    "#9cd78a", "#f7f7a7", "#ebab5f", "#e24344",
+                    "#04738d")#,"#d8cdc9")
+beyonce_colors[6] <- c("#dbcb09") # thicker yellow
+pretty_colors <- beyonce_colors[c(2,1,3:5)]
+```
+
+```{r}
+#"Black" -> BH + shape 20
+#beyonce 2 -> IHW-CARS + shape 12
+#beyonce 1 -> IHW Grenander  + shape 13
+#CARS beyonce -> 3 + shape 0
+#CARS-sparse beyonce -> 4    + shape 1  
+method_names <- c("BH", "CARS", "CARS-sparse", "IHW-CARS", "IHW-Grenander")
+
+method_colors <- c("Black", beyonce_colors[c(3,4, 2, 1)])
+names(method_colors) <- method_names
+
+method_shapes <- c(20, 0,1, 12, 13)
+names(method_shapes) <- method_names
+```
+
+## Load result files
+
+```{r}
+r <- readRDS(file="../precomputed_results/cars_simulations.Rds")
+```
+
+```{r}
+res_r <-  bind_rows(unlist(r, recursive = FALSE)) %>% 
+  group_by(method, m, k, mu_x_1, mu_x_2) %>%
+  summarize(FDR = mean(FDP), Power=mean(pow)) %>%
+  arrange(k, mu_x_1, mu_x_2, desc(Power)) %>% 
+  ungroup() 
+```
+
+## Plot FDR
+
+```{r width=6/1.2, height=4/1.2}
+fdr_cars_plot <- ggplot(res_r, aes(x=k, y=FDR,shape=method, col=method)) + 
+  geom_line() + geom_point() + 
+  ylim(0, 0.3) + 
+  scale_color_manual(values=method_colors)+
+  scale_shape_manual(values=method_shapes)+
+  geom_hline(yintercept=0.1, linetype=2)+
+  xlab(expression(paste("Number of alternatives (", m[1],")")))+ 
+  scale_x_log10(breaks= c(30, 70, 160, 400, 900, 2000)) +   
+  theme_cowplot() +
+  theme(legend.position = "none")
+
+fdr_cars_plot
+```
+
+```{r eval=FALSE}
+#ggsave(fdr_cars_plot, filename="fdr_cars.pdf", width=6/1.2,height=4/1.2)
+```
+
+## Plot Power
+
+```{r width=7.73/1.2,height=4/1.2}
+power_cars_plot <- ggplot(res_r, aes(x=k, y=Power, shape=method, col=method)) + 
+  geom_line() + geom_point() + 
+  scale_color_manual(values=method_colors)+
+  scale_shape_manual(values=method_shapes)+
+  xlab(expression(paste("Number of alternatives (", m[1],")")))+ 
+  scale_x_log10(breaks= c(30, 70, 160, 400, 900, 2000)) +   
+  theme_cowplot()  +
+  theme(legend.title=element_blank())
+
+power_cars_plot
+```
+
+```{r eval=FALSE}
+#ggsave(power_cars_plot, filename="power_cars.pdf", width=7.73/1.2,height=4/1.2)
+```
+
