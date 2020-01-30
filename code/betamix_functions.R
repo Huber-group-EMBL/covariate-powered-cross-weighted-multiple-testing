@@ -1,17 +1,12 @@
-
-
-
 beta_unif_sim <- function(m=10000, mus_slope=1.5, one_sided_tests=FALSE, prob_one_sided=0.25){
   Xs <- matrix(runif(m*2, 0,1), ncol=2)
   colnames(Xs) <- c("X1", "X2")
-  #logit_pi1s <- pi1s_intercept + (Xs^2) %*% c(2,2)
-  #pi1s <- exp(logit_pi1s)/(1+exp(logit_pi1s))
+
   pi1s <- ifelse( Xs[,1]^2 + Xs[,2]^2 <= 1, 0.02, 0.4)
   mus <- pmax(1.3, sqrt(Xs) %*% c(1,1)*mus_slope)
-  #mus <- 1 + Xs %*% c(1.5,1.5)
+  
   mu_alphas <- 1/mus
-  ##mu_alphas <- (Xs+3.2)/6.2 #how did I arrive here?
-  #mus <- 1/mu_alphas #1/x link!
+
   Hs <- rbinom(m, size=1, prob=pi1s)
   Ps <- runif(m)*(1-Hs) + rbeta(m, mu_alphas, 1)*Hs
   Xs <- data.frame(Xs)
@@ -22,12 +17,6 @@ beta_unif_sim <- function(m=10000, mus_slope=1.5, one_sided_tests=FALSE, prob_on
   list(Xs=Xs, Ps=Ps, Hs=Hs, alphas=mu_alphas, pi1s=pi1s)
 }
 
-#correlated_beta_unif_sim <- function(block_size, m=10000,...){
- ## m_fold <- ceiling(m/2)
-#  m_sim <- m_fold/block_size
-#  folds <- c( rep(1L, m_fold), rep(2L, m_fold))
-#  m_sim
-#}
 
 error_fdp_table <- function(x) {
   if (inherits(x, "try-error")){

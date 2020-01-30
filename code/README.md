@@ -17,9 +17,9 @@
 * **grouped_simulations.R**
 
 ### Multiple testing with continuous covariates
-* **betamix_functions.R**
-* **betamix_simulations.R**
-* **betamix_onesided_simulations.R**
+* **betamix_functions.R**: Reusable code for these simulations. The function `beta_unif_sim` generates synthetic datasets, i.e., it generates m p-values $P_i$, covariates $X_i$ and hypothesis indicators $H_i$. The function `eval_beta_unif_sim` first runs `beta_unif_sim` and then evaluates the results of different multiple testing methods when applied to the synthetic data.
+* **betamix_simulations.R**: Run simulations from Section 5.2 and generate results file that is then used to generate Figure 4. 
+* **betamix_onesided_simulations.R** Run simulations from second part of Section 5.2 and generate results file that is then used to generate Figure 5. 
 
 ### Simultaneous two-sample t-tests
 * **cars_ttest_functions.R**
