@@ -2,11 +2,13 @@
 
 This repository serves as companion to the following preprint:
 
-*Covariate-powered cross-weighted multiple testing*, N. Ignatiadis and W.Huber [[arXiv]](https://arxiv.org/abs/1701.05179)
+
+> *Covariate-powered cross-weighted multiple testing*, N. Ignatiadis and W.Huber [[arXiv]](https://arxiv.org/abs/1701.05179)
+
 
 All numerical results and figures in the aforementioned paper are made fully third-party reproducible herein.
 
-The Bioconductor package [IHW](http://bioconductor.org/packages/IHW) provides a user-friendly implementation of IHW-BH/Storey based on the Grenander estimator.
+We note that the Bioconductor package [IHW](http://bioconductor.org/packages/IHW) provides a user-friendly implementation of the IHW-BH/Storey procedures with conditional distributions estimated with the Grenander estimator.
 
 ## Pre-rendered vignettes
 
