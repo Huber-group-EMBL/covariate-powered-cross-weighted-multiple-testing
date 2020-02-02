@@ -22,9 +22,3 @@ betamix_r <- foreach(i=1:nrow(betamix_sim_combs)) %dopar% {
          SIMPLIFY=FALSE )}
 
 saveRDS(betamix_r, file="betamix_simulations.Rds")
-
-betamix_res <-  bind_rows(unlist(betamix_r, recursive = FALSE)) %>% 
-  group_by(method, m, prob_one_sided) %>%
-  summarize(FDR = mean(FDP), Power=mean(pow)) %>%
-  arrange(prob_one_sided, desc(Power)) %>% 
-  ungroup() 

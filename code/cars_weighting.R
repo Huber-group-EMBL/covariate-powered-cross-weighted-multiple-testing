@@ -111,6 +111,6 @@ cars_weighter <- function(primary_stats, Xs, Xs_new, tau, alpha){
 
 
 ihw_cars <- function(primary_stats, Xs, alpha, ...){
-  ihw_bh(primary_stats, Xs, alpha, cars_weighter, tau=1, stat_type="zscore",...)
+  ihw_bh(primary_stats, Xs, alpha, cars_weighter, tau=0.5, stat_type="zscore",...)
 }
 

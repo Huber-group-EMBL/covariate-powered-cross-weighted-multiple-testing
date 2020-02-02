@@ -203,7 +203,7 @@ grouped_storey_weighter <- function(Ps, Xs, Xs_new, tau, alpha){
   ws
 }
 
-ihw_gbh <- function(Ps,Xs, alpha,tau=0.5, ...){
+ihw_gbh <- function(Ps,Xs, alpha, tau=0.5, ...){
   ihw_bh(Ps,Xs, alpha, grouped_storey_weighter, tau=tau, ...)
 }
 

@@ -6,7 +6,6 @@ source("multiple_testing_methods.R")
 source("cars_ttest_functions.R")
 
 
-#ks_ballpark <- exp(seq(log(10), to=log(2000), length.out=5))
 
 cars_sim_combs <- expand.grid(m = 10000,
                               k = c(30, 70, 161, 373, 864, 2000),

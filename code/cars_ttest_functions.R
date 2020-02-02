@@ -1,8 +1,8 @@
-  #----------------------------------------------------------------
-  #  Data generation: Simulation function
-  #----------------------------------------------------------------
+#----------------------------------------------------------------
+#  Data generation: Simulation function
+#----------------------------------------------------------------
   
-
+  
 cars_ttest_data <- function(m=10000, k=10, n_x=50, n_y=50, 
                             mu_x_1=3/sqrt(n_x),  # signal strength for first locations of x
                             mu_y_1=0,  # signal strength for first locations of y
@@ -28,6 +28,11 @@ cars_ttest_data <- function(m=10000, k=10, n_x=50, n_y=50,
   var_mat <-   matrix(c(sd_x,sd_y),  ncol=2, nrow=m, byrow=TRUE)^2
   list(x=x, y=y, H=theta, var_mat=var_mat)
 }
+
+#example call:
+#cars_example_data <- cars_ttest_data(m=10000, k=2000, n_x=50, n_y=50, mu_x_1 = 0.5, 
+#                                     mu_x_2 = 0.25, mu_y_2 = 0.25)
+
 
 #----------------------------------------------------------------
 #  Data preprocessing for CARS to be used with p-value methods
@@ -87,6 +92,10 @@ CARS_preprocess <- function(X,Y, variance){
   preprocessed_df
 }
 
+#  example call:
+#cars_example_data <- cars_ttest_data(m=10000, k=2000, n_x=50, n_y=50, mu_x_1 = 0.5, 
+#                                     mu_x_2 = 0.25, mu_y_2 = 0.25)
+#cars_example_preprocess <- with(cars_example_data, CARS_preprocess(x,y, var_mat))
 
 apply_cars_methods <- function(cars_data, alpha){
   Hs <- cars_data$H
