@@ -1,9 +1,11 @@
 ---
 title: "Grouped multiple testing"
 author: "Nikos Ignatiadis"
+date: "`r doc_date()`"
 output:
-  html_document:
-    df_print: paged
+  BiocStyle::html_document
+vignette: >
+    %\VignetteEngine{knitr::rmarkdown}
 ---
 
 ```{r setup, include=FALSE}
@@ -31,12 +33,14 @@ beyonce_colors[6] <- c("#dbcb09") # thicker yellow
 pretty_colors <- beyonce_colors[c(2,1,3:5)]
 
 
-method_names <- c("BH", "SBH", "Clfdr", "GBH-Storey", "IHW-GBH-Storey", "IHW-Grenander-Storey", "SABHA")
+method_names <- c("BH", "SBH", "Clfdr", "GBH-Storey", "IHW-GBH", "IHW-Grenander-Storey", "SABHA")
+method_names_print <- c("BH", "SBH", "Clfdr", "GBH", "IHW-GBH", "IHW-Storey-Grenander", "SABHA")
+
 method_colors <- c("Black", beyonce_colors[c(3:5, 2, 1, 6)])
-names(method_colors) <- method_names
+names(method_colors) <- method_names_print
 
 method_shapes <- c(20, 0,1,2, 12, 13,2 )
-names(method_shapes) <- method_names
+names(method_shapes) <- method_names_print
 ```
 
 ##  Global null simulations from introduction
@@ -59,12 +63,13 @@ fdr_null_plot <- ggplot(summarize_group_null_sim_res,
   geom_hline(yintercept=0.2, linetype=2) + 
   scale_x_log10() + 
   scale_color_manual(values=pretty_colors[1:2]) + 
-  theme_cowplot()
+  theme_cowplot() + 
+  theme(legend.title=element_blank())
 
 fdr_null_plot
 ```
 ```{r eval=FALSE}
-##ggsave(fdr_null_plot, filename="intro_fdr_null_plot.pdf", width=6,height=2.5)
+ggsave(fdr_null_plot, filename="intro_fdr_null_plot.pdf", width=6,height=2.5)
 ```
 
 ##  Global null simulations
@@ -81,7 +86,11 @@ summarize_group_null_sim_res <- group_by(grouped_null, method, K_coarse) %>%
   arrange(K_coarse, desc(Power)) %>% 
   ungroup() %>%
   filter(method %in% method_names) %>%
-  mutate(method = factor(method, levels=method_names)) 
+  mutate(method = factor(method, levels=method_names)) %>%
+  mutate(method = fct_recode(method, 
+                            "GBH"="GBH-Storey",
+                            "IHW-Storey-Grenander" = "IHW-Grenander-Storey"))
+
 ```
 
 ```{r  fig.width=5.6, fig.height=2.4}
@@ -92,7 +101,8 @@ fdr_grouped_null_plot <- ggplot(summarize_group_null_sim_res, aes(x=K_coarse, y=
   scale_shape_manual(values=method_shapes)+
   geom_hline(yintercept=0.1, linetype=2)+
   xlab("Number of groups (G)") +
-  theme_cowplot()
+  theme_cowplot() + 
+  theme(legend.title=element_blank())
 fdr_grouped_null_plot
 ```
 
@@ -115,8 +125,10 @@ summarize_group_sim_res <- group_by(group_sim_res, method, K_coarse) %>%
                              arrange(K_coarse, desc(Power)) %>% 
                              ungroup() %>%
                              filter(method %in% method_names) %>%
-                             mutate(method = factor(method, levels=method_names))
-
+                             mutate(method = factor(method, levels=method_names)) %>%
+                             mutate(method = fct_recode(method, 
+                                  "GBH"="GBH-Storey",
+                                  "IHW-Storey-Grenander" = "IHW-Grenander-Storey"))
 ```
 
 ### Plot FDR
@@ -129,7 +141,8 @@ fdr_grouped_signal_plot <- ggplot(summarize_group_sim_res, aes(x=K_coarse, y=FDR
   geom_hline(yintercept=0.1, linetype=2)+
   xlab("Number of groups (G)")+ 
   scale_x_log10(breaks=c(2,5, 10, 20,40)) +   
-  theme_cowplot() 
+  theme_cowplot() +
+  theme(legend.title=element_blank())
 fdr_grouped_signal_plot
 ```
 
@@ -147,11 +160,13 @@ power_grouped_signal_plot <- ggplot(summarize_group_sim_res, aes(x=K_coarse, y=P
                                 scale_shape_manual(values=method_shapes) +
                                 xlab("Number of groups (G)")  +
                                 scale_x_log10(breaks=c(2,5, 10, 20,40)) +   
-                                theme_cowplot() 
+                                theme_cowplot() + 
+                                theme(legend.title=element_blank())
+
 power_grouped_signal_plot
 ```
 
 ```{r eval=FALSE}
-# ggsave(power_grouped_signal_plot, filename="power_grouped_signal_plot.pdf", width=5.6,height=2.8)
+ggsave(power_grouped_signal_plot, filename="power_grouped_signal_plot.pdf", width=5.6,height=2.8)
 ```
 

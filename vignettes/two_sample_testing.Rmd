@@ -1,10 +1,11 @@
 ---
 title: "Simultaneous two-sample testing"
 author: "Nikos Ignatiadis"
-date: "1/12/2020"
+date: "`r doc_date()`"
 output:
-  html_document:
-    df_print: paged
+  BiocStyle::html_document
+vignette: >
+    %\VignetteEngine{knitr::rmarkdown}
 ---
 
 ```{r setup, include=FALSE}
@@ -39,12 +40,13 @@ pretty_colors <- beyonce_colors[c(2,1,3:5)]
 #CARS beyonce -> 3 + shape 0
 #CARS-sparse beyonce -> 4    + shape 1  
 method_names <- c("BH", "CARS", "CARS-sparse", "IHW-CARS", "IHW-Grenander")
+method_names_print <- c("BH", "CARS", "CARS-sparse", "IHW-Storey-CARS", "IHW-Storey-Grenander")
 
 method_colors <- c("Black", beyonce_colors[c(3,4, 2, 1)])
-names(method_colors) <- method_names
+names(method_colors) <- method_names_print
 
 method_shapes <- c(20, 0,1, 12, 13)
-names(method_shapes) <- method_names
+names(method_shapes) <- method_names_print
 ```
 
 ## Load result files
@@ -58,7 +60,10 @@ res_r <-  bind_rows(unlist(r, recursive = FALSE)) %>%
   group_by(method, m, k, mu_x_1, mu_x_2) %>%
   summarize(FDR = mean(FDP), Power=mean(pow)) %>%
   arrange(k, mu_x_1, mu_x_2, desc(Power)) %>% 
-  ungroup() 
+  ungroup() %>%
+  mutate(method = fct_recode(method, 
+                            "IHW-Storey-CARS" = "IHW-CARS",
+                            "IHW-Storey-Grenander" = "IHW-Grenander"))
 ```
 
 ## Plot FDR
@@ -98,6 +103,6 @@ power_cars_plot
 ```
 
 ```{r eval=FALSE}
-#ggsave(power_cars_plot, filename="power_cars.pdf", width=7.73/1.2,height=4/1.2)
+ggsave(power_cars_plot, filename="power_cars.pdf", width=7.73/1.2,height=4/1.2)
 ```
 
