@@ -1,0 +1,16 @@
+Package: IHWStatsPaper
+Type: Package
+Title: Code to reproduce results
+Version: 0.1.0
+Author: Nikos Ignatiadis
+Maintainer: Nikos Ignatiadis <nikos.ignatiadis01@gmail.com>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Imports:
+    dplyr
+Suggests: 
+    testthat
+RoxygenNote: 7.1.1
