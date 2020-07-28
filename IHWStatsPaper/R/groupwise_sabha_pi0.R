@@ -6,6 +6,7 @@
 #' @param pvals Vector of P-values.
 #' @param Xs Vector with categorical side-information
 #' @param alpha Nominal testing level
+#'
 #' @return Binary vector of rejected/non-rejected hypotheses.
 #' @export
 groupwise_sabha <- function(pvals, Xs, alpha, tau=0.5, eps=0.1, return_fit=FALSE,

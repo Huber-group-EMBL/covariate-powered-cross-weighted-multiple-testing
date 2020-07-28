@@ -5,7 +5,6 @@
 #' @param gbh_only Whether to only apply GBH and IHW-GBH
 #' @return Data frame with FDP and Power of different methods on this simulation.
 #' @export
-
 apply_grouped_methods <- function(sim, alpha, gbh_only=FALSE){
   Xs <- sim$Xs #groups
   Ps <- sim$Ps
@@ -30,9 +29,7 @@ apply_grouped_methods <- function(sim, alpha, gbh_only=FALSE){
   res
 }
 
-#---------------------------------------------------
-#------------------- Simulation settings------------
-#---------------------------------------------------
+
 
 #' Simulation: Grouped multiple testing under global null
 #
