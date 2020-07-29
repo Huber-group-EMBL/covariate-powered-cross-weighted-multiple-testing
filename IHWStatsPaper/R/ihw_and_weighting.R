@@ -1,3 +1,32 @@
+#' Wrapper for the IHW procedure
+#'
+#' @param Ps   Numeric vector of unadjusted p-values.
+#' @param Xs   Vector or matrix of covariates
+#' @param alpha    Significance level at which to apply method
+#' @param Storey   Bool (default: FALSE): is the procedure pi0 adaptive or not?
+#' @param pre_bin  Keyword argument that defines the binning procedure
+#'
+#' @return         Binary vector of rejected/non-rejected hypotheses.
+#'
+#' @export
+ihw_nmeth_wrapper <- function(Ps, Xs, alpha, pre_bin = FALSE, Storey=FALSE){
+  if (pre_bin == "2D"){
+    binning_idx <- interaction( cut(Xs[,1],5), cut(Xs[,2],5))
+  } else if (pre_bin == "1D"){
+    binning_idx <- IHW::groups_by_filter(Xs, 10)
+  } else {
+    binning_idx <- as.factor(Xs)
+  }
+  if (Storey){
+    ihw_nmeth_fit <- ihw(Ps, binning_idx, alpha, lambdas=Inf,
+                         null_proportion=TRUE, null_proportion_level=0.5)
+  } else {
+    ihw_nmeth_fit <- ihw(Ps, binning_idx, alpha, lambdas=Inf)
+  }
+  rejected_hypotheses(ihw_nmeth_fit)
+}
+
+
 #' The tau-weighted BH multiple testing procedure
 #'
 #' @param Ps   Numeric vector of unadjusted p-values.
@@ -10,7 +39,7 @@ tau_weighted_bh <- function(Ps, ws, tau=0.5){
   weighted_pvals <- ifelse(ws == 0, 1, Ps/ws)
   weighted_pvals[weighted_pvals > 1] <- 1
   weighted_pvals[ Ps >= tau] <- 1
-  adj_p <- p.adjust(weighted_pvals, method="BH")
+  adj_p <- stats::p.adjust(weighted_pvals, method="BH")
   adj_p
 }
 
@@ -29,8 +58,23 @@ weighted_storey_pi0 <- function(pvalues, weights, tau=0.5, m = length(pvalues)){
   num/m/(1-tau)
 }
 
-
-ihw_bh <- function(primary_stat,Xs, alpha, wt_fitter, tau=0.5,
+#' Main wrapper for general IHW-BH/Storey procedure
+#'
+#' @param primary_stat  Vector of test statistics, typically pvalues (see `stat_type`)
+#' @param Xs       Side-information for each test
+#' @param alpha    Significance level at which to apply method
+#' @param wt_fitter Function that does the weight learning, for example `grouped_storey_weighter`.
+#' @param tau      Numeric (default: 0.5) censoring level
+#' @param Storey   Bool (default: FALSE): is the procedure pi0 adaptive or not?
+#' @param folds    Factor with assignments of tests to folds, defaults to NULL in which case they are chosen at random.
+#' @param kfolds   Integer, number of folds into which to split hypotheses (ignored if `folds` is not NULL).
+#' @param stat_type Either "pvalue" (default) or "zscore"
+#' @param return_weights Boolean, whether to return weigts (defauls to FALSE)
+#'
+#' @return Binary vector of rejected/non-rejected hypotheses.
+#'
+#' @export
+ihw_bh <- function(primary_stat, Xs, alpha, wt_fitter, tau=0.5,
                    folds=NULL, kfolds=5L, Storey=FALSE, stat_type="pvalue",
                    return_weights=FALSE){
   if (stat_type == "pvalue"){
@@ -126,6 +170,16 @@ grouped_storey_weighter <- function(Ps, Xs, Xs_new, tau, alpha){
   ws
 }
 
+#' The IHW-GBH multiple testing procedure
+#'
+#' @param Ps       Numeric vector of unadjusted p-values.
+#' @param Xs       Factor to which different hypotheses belong
+#' @param alpha    Significance level at which to apply method
+#' @param tau      Numeric (default: 0.5) level at which to apply Storey's pi0 estimator
+#' @param Storey   Bool (default: FALSE): is the procedure pi0 adaptive or not?
+#'
+#' @return         Binary vector of rejected/non-rejected hypotheses.
+#' @export
 ihw_gbh <- function(Ps,Xs, alpha, tau=0.5, ...){
   ihw_bh(Ps,Xs, alpha, grouped_storey_weighter, tau=tau, ...)
 }

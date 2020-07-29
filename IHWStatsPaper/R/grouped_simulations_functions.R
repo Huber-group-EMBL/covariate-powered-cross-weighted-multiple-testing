@@ -92,6 +92,7 @@ grouped_sim <- function(m, K_coarse, pi0_global, sparsity_multiplier=4,  K=40){
   data.frame(Hs=Hs, Ps=Ps, Xs=Xs, Xs_tilde=Xs_tilde, eff_sizes = eff_sizes[Xs_tilde], pi0s = pi0s[Xs_tilde])
 }
 
+
 eval_grouped_sim <- function(m, K_coarse, pi0_global, sparsity_multiplier, seed, alpha=0.1){
   print(paste0("seed:",seed," and K_Coarse:", K_coarse))
   sim <- grouped_sim(m, K_coarse, pi0_global, sparsity_multiplier)

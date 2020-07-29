@@ -52,7 +52,7 @@ stratified_bhq <- function(unadj_p, groups, alpha){
   m        <- length(unadj_p)
   m_groups <- sapply(pv_list, length)
 
-  adj_pv_list <- lapply(pv_list, function(pv) p.adjust(pv, method="BH"))
+  adj_pv_list <- lapply(pv_list, function(pv) stats::p.adjust(pv, method="BH"))
   adj_p <- unsplit(adj_pv_list, groups)
   adj_p <= alpha
 }

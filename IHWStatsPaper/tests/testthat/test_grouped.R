@@ -20,7 +20,16 @@ null_sim_run <- grouped_global_null_sim(m, K)
 expect_equal(length(unique(null_sim_run$Xs)), 40)
 expect_equal(as.numeric(table(null_sim_run$Xs)), rep(m/K, K))
 
+set.seed(1)
 grouped_sim_run <- grouped_sim(20000, 10, 0.9, 4)
+expect_equal(nrow(grouped_sim_run), 20000)
+set.seed(1)
+grouped_sim_run_coarser <- grouped_sim(20000, 20, 0.9, 4)
+expect_equal(grouped_sim_run$Ps, grouped_sim_run_coarser$Ps)
+expect_equal(grouped_sim_run$Xs_tilde, grouped_sim_run_coarser$Xs_tilde)
+expect_false(all(grouped_sim_run$Xs == grouped_sim_run_coarser$Xs))
+
+
 expect_equal(length(unique(grouped_sim_run$Xs)), 10)
 expect_equal(length(unique(grouped_sim_run$Xs_tilde)), 40)
 
@@ -52,7 +61,7 @@ true_pi0s <- group_by(grouped_sim_run_5, Xs) %>% summarize(pi0 = mean(1-Hs)) %>%
 expect_equal( as.numeric(rank(true_pi0s$pi0)), as.numeric(rank(true_pi0s$sabha_qs)))
 
 sabha_res2 <- groupwise_sabha(grouped_sim_run_5$Ps, grouped_sim_run_5$Xs_tilde, 0.1, return_fit=TRUE, max_iters=400 )
-expect_true(sum( 2*(grouped_sim_run_5$Ps >= 0.5)/sabha_res2$q_all) <= 100000.001)
+expect_true(sum( 2*(grouped_sim_run_5$Ps >= 0.5)/sabha_res2$q_all) <= 100000.05)
 expect_true(all(sabha_res2$q >= 0.1))
 expect_true(all(sabha_res2$q <= 1.0))
 true_pi0s2 <- group_by(grouped_sim_run_5, Xs_tilde) %>% summarize(pi0 =min(pi0s)) %>% mutate(sabha_qs = sabha_res2$q)
@@ -120,4 +129,45 @@ pi0_st_bh <- weighted_storey_pi0(grouped_sim_run_5$Ps, ws_gbh)
 expect_equal(gbh_res_adaptive, tau_weighted_bh(grouped_sim_run_5$Ps*pi0_st_bh, ws_gbh, 0.5) <= 0.05)
 expect_equal(gbh_res_adaptive, tau_weighted_bh(grouped_sim_run_5$Ps, ws_gbh/pi0_st_bh, 0.5) <= 0.05)
 
+# Time to try out IHW
+set.seed(1)
+ihw_gbh_rjs <- ihw_gbh(grouped_sim_run_5$Ps, grouped_sim_run_5$Xs, 0.05)
+set.seed(1)
+ihw_gbh_res <- ihw_gbh(grouped_sim_run_5$Ps, grouped_sim_run_5$Xs, 0.05, return_weights=TRUE)
+expect_equal(ihw_gbh_res$rjs, ihw_gbh_rjs)
+expect_true(abs(sum(ihw_gbh_res$ws) - 100000) <= 0.00001)
+ihw_df <- data.frame(Ps = grouped_sim_run_5$Ps,
+                     Xs = grouped_sim_run_5$Xs,
+                     Ws = ihw_gbh_res$ws,
+                     folds = ihw_gbh_res$folds,
+                     adj_p = ihw_gbh_res$adj_p,
+                     rjs = ihw_gbh_res$rjs)
+
+ihw_df_summary <- group_by(ihw_df, folds) %>% summarize(sum_Ws = sum(Ws), n=n())
+expect_equal(ihw_df_summary$sum_Ws, ihw_df_summary$n)
+
+ihw_df_minus_2 <- filter(ihw_df, folds != 2)
+ihw_df_2 <- filter(ihw_df, folds == 2)
+unique_wts <-  group_by(ihw_df_2, Xs) %>% summarize(w_min = min(Ws), w_max = max(Ws), n=n())
+expect_equal(unique_wts$w_min, unique_wts$w_max)
+newwt <- grouped_storey_weighter(ihw_df_minus_2$Ps,
+                                 ihw_df_minus_2$Xs,
+                                 c(rep(1, unique_wts$n[1]), c(rep(2, unique_wts$n[2])))
+                                 , 0.5, 0.2)
+expect_equal(unique_wts$w_min, c(newwt[1], newwt[15000]))
+expect_equal(ihw_gbh_rjs,  tau_weighted_bh(ihw_df$Ps, ihw_df$Ws, 0.5) <= 0.05)
+
+ihw_gbh_storey_rjs <- ihw_gbh(grouped_sim_run_5$Ps, grouped_sim_run_5$Xs, 0.05, folds = ihw_df$folds,
+                              Storey=TRUE)
+expect_true(sum(ihw_gbh_storey_rjs) > sum(ihw_gbh_rjs))
+wt_multipliers <- group_by(ihw_df, folds) %>% mutate(storey_pi0 = weighted_storey_pi0(Ps, Ws)) %>% ungroup()
+expect_equal(length(unique(wt_multipliers$storey_pi0)),5)
+
+expect_equal(ihw_gbh_storey_rjs,  tau_weighted_bh(ihw_df$Ps, ihw_df$Ws/wt_multipliers$storey_pi0, 0.5) <= 0.05)
+
+# IHW nmeth wrapper
+
+ihw_nmeth <- ihw_nmeth_wrapper(ihw_df$Ps, ihw_df$Xs, 0.05, Storey=FALSE)
+ihw_nmeth2 <- ihw_nmeth_wrapper(ihw_df$Ps, ihw_df$Xs, 0.05, Storey=TRUE)
+expect_gt(sum(ihw_nmeth2), sum(ihw_nmeth))
 
