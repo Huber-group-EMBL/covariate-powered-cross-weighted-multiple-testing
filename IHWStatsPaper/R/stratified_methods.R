@@ -83,3 +83,52 @@ stratified_clfdr <- function(unadj_p, groups, alpha){
   # now use the rejection rule described in Cai and Sun [2009] paper
   oracle_local_fdr_test(unadj_p, lfdrs, alpha)
 }
+
+
+
+
+#' Group Benjamini Hochberg (GBH) multiple testing procedure
+#'
+#'
+#' @param unadj_p  Numeric vector of unadjusted p-values.
+#' @param groups   Factor to which different hypotheses belong
+#' @param alpha    Significance level at which to apply method
+#' @param tau      Numeric (default: 0.5) level at which to apply Storey's pi0 estimator
+#' @param Storey   Bool (default: FALSE): is the GBH procedure pi0 adaptive or not?
+#' @return Binary vector of rejected/non-rejected hypotheses.
+#'
+#' @export
+gbh_simple <- function(unadj_p, groups, alpha, tau=0.5, Storey=FALSE){
+
+  groups <- as.factor(groups)
+  pv_list <- split(unadj_p, groups)
+
+  pi0_fun <- function(pv) {min(1, (1+sum( pv >= tau))/length(pv)/(1-tau))}
+
+  m        <- length(unadj_p)
+  m_groups <- sapply(pv_list, length)
+  pi0_groups <- sapply(pv_list, pi0_fun)
+
+  # in this case we set all wts to 0
+  if (all(pi0_groups ==1 )){
+    ws <- rep(1,m)
+    # do actual work
+  } else if  (all(pi0_groups ==0 )){
+    ws <- rep(1,m)
+  } else {
+
+    ws <- unsplit( mapply(function(pi0_g, pv) {(1-pi0_g)/pi0_g}, pi0_groups, pv_list,  SIMPLIFY=FALSE),
+                   groups)
+    ws <- ws/sum(ws)*m
+  }
+  if (Storey){
+    pi0 <- weighted_storey_pi0(unadj_p, ws, tau=tau)
+    unadj_p <- unadj_p * pi0
+  }
+
+  adj_p <- tau_weighted_bh(unadj_p, ws, tau=1.0)
+  rjs <- adj_p <= alpha
+  #return(list(ws=ws, adj_p=adj_p, rjs=rjs))
+
+  rjs
+}

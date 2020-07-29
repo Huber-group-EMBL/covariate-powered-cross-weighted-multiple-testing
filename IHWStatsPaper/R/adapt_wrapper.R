@@ -12,7 +12,7 @@
 #' @export
 adapt_mtp <- function(Ps, Xs, alpha, formula_rhs="~X1+X2", return_fit=FALSE){
   adapt_glm_fit <- adaptMT::adapt_glm(as.data.frame(Xs), Ps, formula_rhs, formula_rhs, alphas=alpha)
-  adapt_glm_rjs <- adaptMT::adapt_glm_fit$qvals <= alpha
+  adapt_glm_rjs <- adapt_glm_fit$qvals <= alpha
   if (return_fit){
     return(list(rjs=adapt_glm_rjs, fit=adapt_glm_fit))
   } else {

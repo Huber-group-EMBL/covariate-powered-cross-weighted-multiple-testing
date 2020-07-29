@@ -46,8 +46,15 @@ get_thresholds_betamix <- function(c, pi1s, alphas){
   ((pi0s/c - pi0s)/(alphas*pi1s))^(1/(alphas-1))
 }
 
-
-
+#' Oracle local false discovery rate procedure in the beta mixture model
+#'
+#' @param Ps  Numeric vector of unadjusted p-values.
+#' @param pi1s  True probability of being an alternative in the beta mixture model
+#' @param mu_alphas Parameter vector of alternative Beta(mu_alpha, 1) distribution of each test.
+#' @param alpha Significance level at which to apply method
+#'
+#' @return Binary vector of rejected/non-rejected hypotheses.
+#' @export
 betamix_oracle_lfdr <- function(Ps, pi1s, mu_alphas, alpha){
   oracle_local_fdr_test(Ps,
                         get_localfdrs_betamix(Ps, pi1s, mu_alphas),
@@ -55,6 +62,10 @@ betamix_oracle_lfdr <- function(Ps, pi1s, mu_alphas, alpha){
 }
 
 
+betamix_datadriven_lfdr <- function(Ps, Xs, alpha){
+  gamma_glm_fit  <- gamma_glm_basic_em(Ps, Xs, maxiter = 200, tau_pi0=0.5)
+  betamix_oracle_lfdr(Ps, gamma_glm_fit$pi1s, gamma_glm_fit$alphas, alpha)
+}
 
 
 #' Fit conditional beta-uniform mixture model using EM algorithm.
@@ -68,7 +79,7 @@ betamix_oracle_lfdr <- function(Ps, pi1s, mu_alphas, alpha){
 #' @param pi1_min  Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).
 #' @param alpha_max  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).
 
-#' @return List with parameters of fitted GLM
+#' @return List with parameters of fitted conditional Beta-Uniform mixture
 #' @export
 gamma_glm_basic_em <- function(Ps, Xs, formula_rhs="~X1+X2", maxiter = 50, tau_pi0=0.5,
                                pi1_min = 0.01, pi1_max = 0.9, alpha_max=0.9){
@@ -107,4 +118,78 @@ gamma_glm_basic_em <- function(Ps, Xs, formula_rhs="~X1+X2", maxiter = 50, tau_p
   list(glm_mus = glm_mus_iter, glm_pi1s = glm_pi1s_iter, glm_bl = glm_bl,
        alphas = alphas_iter, pi1s = pi1s_iter)
 }
+
+
+
+#' Fit conditional beta-uniform mixture model using EM algorithm under p-value tau-censoring.
+#'
+#' @param censored_Ps       Numeric vector of tau-censored p-values
+#' @param Xs       Data frame with features
+#' @param tau_censor Numeric, level at which p-valeus have been tau-censored
+#' @param formula_rhs Formula defining the RHS in the fitted GLMs, defaults to ~X1+X2 (used in simulations herein).
+#' @param maxiter  Total number of iterations to run the EM algorithm.
+#' @param tau_pi0  Number in (0,1) used for the initialization of the EM algorithm through the Boca-Leek approach (default: 0.5).
+#' @param pi1_min  Numeric in (0,1),  lower bound on conditionally probability of being an alternative (default: 0.01).
+#' @param pi1_max  Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).
+#' @param alpha_max  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).
+
+#' @return List with parameters of fitted conditional Beta-Uniform mixture
+#' @export
+
+gamma_glm_censored_em <- function(censored_Ps, Xs,  tau_censor, formula_rhs="~X1+X2",
+                                  maxiter = 50, tau_pi0=0.5,
+                                  pi1_min = 0.01, pi1_max = 0.9, alpha_max=0.9){
+  # basic transform
+  m <- length(censored_Ps)
+  censored_locs <- which(censored_Ps == 0)
+  uncensored_locs <- which(censored_Ps >= tau_censor)
+
+  Ys <-  rep(-log(tau_censor/2), length(censored_Ps))
+  Ys[uncensored_locs] <- -log(censored_Ps[uncensored_locs])
+
+
+  ## Use Boca-Leek to initialize pi0s:
+  BL_transform <- as.integer(censored_Ps >= tau_pi0)
+  glm_bl <- glm(formula(paste("BL_transform", formula_rhs)), family=binomial(), data=Xs)
+  pi1s_iter <- 1 - predict(glm_bl, type="response")/(1-tau_pi0)
+  pi1s_iter <- pmax(pi1_min, pmin(pi1_max, pi1s_iter))
+
+  # initialize EM Hs
+  Hs_iter <- rep(NA, m)   #Our best guess for Hs is 1-FDR, use BH + our pilot pi0
+  Ps_tmp <- censored_Ps
+  Ps_tmp[censored_locs] <- tau_censor
+  Ps_adj_tmp <- p.adjust(Ps_tmp, method="BH")
+  Hs_iter <- 1 - Ps_adj_tmp*(1-pi1s_iter)
+
+  for (i in 1:maxiter){
+    # fit GLM on transformed and imputed responses
+    glm_mus_iter <- glm( formula(paste("Ys", formula_rhs)), family=Gamma(), weights=Hs_iter, data=Xs)
+    # update alphas and Hs
+    alphas_iter <- predict(glm_mus_iter, type="link")
+    alphas_iter <- pmin( alphas_iter, alpha_max)
+
+    # E-step for Hs
+    Hs_iter[uncensored_locs] <- 1-(1 - pi1s_iter[uncensored_locs])/((1 - pi1s_iter[uncensored_locs])  +
+                                                                      pi1s_iter[uncensored_locs]*dbeta(censored_Ps[uncensored_locs], alphas_iter[uncensored_locs], 1))
+    Hs_iter[censored_locs] <-1- (1 - pi1s_iter[censored_locs])*tau_censor/((1 - pi1s_iter[censored_locs])*tau_censor  +
+                                                                             pi1s_iter[censored_locs]*pbeta(tau_censor, alphas_iter[censored_locs], 1))
+
+    # E-step for censored Ys
+    Ys[censored_locs] <- (1/alphas_iter[censored_locs] - log(tau_censor))#/Hs_iter[censored_locs]
+
+    # fit logistic GLM
+    glm_pi1s_iter <- glm(formula(paste("Hs_iter", formula_rhs)), family=quasibinomial(), data=Xs)
+    # get logistic GLM predictions
+    pi1s_iter <-  predict(glm_pi1s_iter, type="response")
+    pi1s_iter <- pmax(pi1_min, pmin(pi1_max, pi1s_iter))
+
+
+  }
+  list(glm_mus = glm_mus_iter, glm_pi1s = glm_pi1s_iter, glm_bl = glm_bl,
+       alphas = alphas_iter, pi1s = pi1s_iter)
+}
+
+
+
+
 
