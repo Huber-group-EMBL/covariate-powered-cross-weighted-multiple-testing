@@ -6,7 +6,8 @@
 #' @param prob_one_sided Numeric (default:0.25) proportion of nulls that are strictly superuniform
 #'
 #' @return Data frame with columns `Hs` (null or alternative), `Ps` (p-value), `Xs` (side-information),
-#'         `alphas` (parameters of alternative distribution), `pi1s` (probabilities of being from the alternative distribution)
+#'         `alphas` (parameters of alternative distribution), `pi1s` (probabilities of being from the alternative distribution),
+#'         `oracle_lfdr` (oracle local fdr)
 #' @export
 beta_unif_sim <- function(m=10000, mus_slope=1.5, one_sided_tests=FALSE, prob_one_sided=0.25){
   Xs <- matrix(runif(m*2, 0,1), ncol=2)
@@ -23,8 +24,13 @@ beta_unif_sim <- function(m=10000, mus_slope=1.5, one_sided_tests=FALSE, prob_on
   if (one_sided_tests){
     Hs_alt <-  1- (1-Hs)*stats::rbinom(m, size=1, prob=prob_one_sided)
     Ps[Hs_alt == 0] <- stats::rbeta(sum(Hs_alt == 0), 1, 0.5)
+    oracle_lfdr_null <- (1-pi1s)*( 1-prob_one_sided + prob_one_sided*stats::dbeta(Ps, 1, 0.5) )
+  } else{
+    oracle_lfdr_null <- 1-pi1s
   }
-  list(Xs=Xs, Ps=Ps, Hs=Hs, alphas=mu_alphas, pi1s=pi1s)
+  oracle_lfdr_alternative <- pi1s*dbeta(Ps, mu_alphas, 1)
+  oracle_lfdr <- oracle_lfdr_null/(oracle_lfdr_null+oracle_lfdr_alternative)
+  list(Xs=Xs, Ps=Ps, Hs=Hs, alphas=mu_alphas, pi1s=pi1s, oracle_lfdrs=oracle_lfdr)
 }
 
 
@@ -44,8 +50,9 @@ eval_beta_unif_sim <- function(mu_slope, seed, one_sided_tests=FALSE, prob_one_s
   Hs <- sim$Hs
   mu_alphas <- sim$alphas
   pi1s <- sim$pi1s
+  oracle_lfdrs <- sim$oracle_lfdrs
 
-  lfdr_oracle_res <- fdp_eval(Hs,  betamix_oracle_lfdr(Ps, pi1s, mu_alphas, alpha))
+  lfdr_oracle_res <- fdp_eval(Hs,  oracle_local_fdr_test(Ps, oracle_lfdrs, alpha))
   lfdr_em_res <- error_fdp_table(try(fdp_eval(Hs,  betamix_datadriven_lfdr(Ps, Xs, alpha))))
 
   sim_res <-  bind_rows(mutate(lfdr_oracle_res, method="Lfdr-oracle"),

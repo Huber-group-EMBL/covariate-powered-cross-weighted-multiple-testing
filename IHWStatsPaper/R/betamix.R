@@ -18,7 +18,7 @@ get_localfdrs_betamix <- function(ts, pi1s, alphas){
 #' @param alphas  Numeric vector of first parameter of alternative Beta distribution (Beta(a_i, 1)).
 #' @param numerator_bh  If TRUE (default is FALSE) then replace pi0 in numerator by 1.
 #'
-#' @return Vector of Tail fdrs.
+#' @return Numeric with Tail fdr value.
 #' @export
 get_tailfdr_betamix <- function(ts, pi1s, alphas, numerator_bh=FALSE){
   m <- length(ts)
@@ -62,8 +62,19 @@ betamix_oracle_lfdr <- function(Ps, pi1s, mu_alphas, alpha){
 }
 
 
-betamix_datadriven_lfdr <- function(Ps, Xs, alpha){
-  gamma_glm_fit  <- gamma_glm_basic_em(Ps, Xs, maxiter = 200, tau_pi0=0.5)
+
+#' Local false discovery rate procedure with local fdrs estimated from the Betamix-model through the EM algorithml
+#'
+#' @param Ps     Numeric vector of unadjusted p-values.
+#' @param Xs     Data frame with features
+#' @param alpha  Significance level at which to apply method
+#' @param formula_rhs Formula defining the RHS in the fitted GLMs, defaults to ~X1+X2 (used in simulations herein).
+#' @param maxiter  Total number of iterations to run the EM algorithm
+#'
+#' @return Binary vector of rejected/non-rejected hypotheses.
+#' @export
+betamix_datadriven_lfdr <- function(Ps, Xs, alpha, formula_rhs="~X1+X2", maxiter=200,...){
+  gamma_glm_fit  <- gamma_glm_basic_em(Ps, Xs, formula_rhs=formula_rhs, maxiter = maxiter, tau_pi0=0.5,...)
   betamix_oracle_lfdr(Ps, gamma_glm_fit$pi1s, gamma_glm_fit$alphas, alpha)
 }
 
@@ -76,7 +87,7 @@ betamix_datadriven_lfdr <- function(Ps, Xs, alpha){
 #' @param maxiter  Total number of iterations to run the EM algorithm
 #' @param tau_pi0  Number in (0,1) used for the initialization of the EM algorithm through the Boca-Leek approach (default: 0.5).
 #' @param pi1_min  Numeric in (0,1),  lower bound on conditionally probability of being an alternative (default: 0.01).
-#' @param pi1_min  Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).
+#' @param pi1_max  Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).
 #' @param alpha_max  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).
 
 #' @return List with parameters of fitted conditional Beta-Uniform mixture
@@ -189,6 +200,19 @@ gamma_glm_censored_em <- function(censored_Ps, Xs,  tau_censor, formula_rhs="~X1
        alphas = alphas_iter, pi1s = pi1s_iter)
 }
 
+
+weights_betamix <- function(alpha, pi1s, alphas, numerator_bh=FALSE){
+  wrapped_fun <- function(c) {
+    ts <- get_thresholds_betamix(c, pi1s, alphas)
+    get_tailfdr_betamix(ts, pi1s, alphas, numerator_bh = numerator_bh) - alpha
+  }
+
+  interval_endpts <- c(1e-10, 0.8)
+  c_root <- stats::uniroot(wrapped_fun, interval_endpts)$root
+  ts_root <- get_thresholds_betamix(c_root, pi1s, alphas)
+  ws <- ts_root/sum(ts_root)*length(ts_root)
+  ws
+}
 
 
 

@@ -76,7 +76,7 @@ weighted_storey_pi0 <- function(pvalues, weights, tau=0.5, m = length(pvalues)){
 #' @export
 ihw_bh <- function(primary_stat, Xs, alpha, wt_fitter, tau=0.5,
                    folds=NULL, kfolds=5L, Storey=FALSE, stat_type="pvalue",
-                   return_weights=FALSE){
+                   return_weights=FALSE,...){
   if (stat_type == "pvalue"){
     Ps <- primary_stat
   } else if (stat_type == "zscore") {
@@ -100,7 +100,7 @@ ihw_bh <- function(primary_stat, Xs, alpha, wt_fitter, tau=0.5,
       Xs_train <- Xs[train_idx,]
       Xs_test <- Xs[test_idx,]
     }
-    ws_tmp <- wt_fitter(primary_stat[train_idx], Xs_train, Xs_test, tau, alpha)
+    ws_tmp <- wt_fitter(primary_stat[train_idx], Xs_train, Xs_test, tau, alpha, ...)
     #ws_tmp <- pmin(10, ws_tmp)
     if (all(ws_tmp == 0)){
       ws_tmp <- rep(1, length(ws_tmp))
@@ -180,7 +180,61 @@ grouped_storey_weighter <- function(Ps, Xs, Xs_new, tau, alpha){
 #'
 #' @return         Binary vector of rejected/non-rejected hypotheses.
 #' @export
-ihw_gbh <- function(Ps,Xs, alpha, tau=0.5, ...){
-  ihw_bh(Ps,Xs, alpha, grouped_storey_weighter, tau=tau, ...)
+ihw_gbh <- function(Ps,Xs, alpha, tau=0.5, Storey=FALSE, ...){
+  ihw_bh(Ps,Xs, alpha, grouped_storey_weighter, tau=tau, Storey=Storey, ...)
+}
+
+#' Learn multiple testing weights based on EM fitting of the betamix model and local FDRs
+#'
+#' @param Ps        Numeric vector of unadjusted p-values in training set.
+#' @param Xs        Factor of groups in training set.
+#' @param Xs_new    Factor of groups in test-set (out-of-fold).
+#' @param tau       Numeric (default = 0.5), the level at which tau-censoring is applied.
+#' @param alpha    Significance level at which to apply method (not used for this weight learning method)
+#' @param formula_rhs Formula defining the RHS in the fitted GLMs, defaults to ~X1+X2 (used in simulations herein).
+#' @param maxiter  (Default: 200) Total number of iterations to run the EM algorithm
+#' @param pi1_min  Numeric in (0,1),  lower bound on conditionally probability of being an alternative (default: 0.01).
+#' @param pi1_max  Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).
+#' @param alpha_max  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).
+#' @param numerator_bh Bool (default:TRUE) Define the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
+#' @return Numeric vector with weights of test-set hypotheses
+#' @export
+censored_betamix_weighter <- function(Ps, Xs, Xs_new, tau, alpha,
+                                      formula_rhs="~X1+X2",
+                                      pi1_min = 0.01,
+                                      pi1_max = 0.9,
+                                      alpha_max = 0.9,
+                                      maxiter = 200,
+                                      numerator_bh = TRUE,
+                                      ...){
+  Ys <- Ps*(Ps >= tau)
+  gamma_glm_censored_fit <- gamma_glm_censored_em(Ys, Xs, tau, maxiter = maxiter, formula_rhs=formula_rhs, tau_pi0=0.5,
+                                                  pi1_min = pi1_min,
+                                                  pi1_max = pi1_max,
+                                                  alpha_max = alpha_max, ...)
+  alphas_new <- predict(gamma_glm_censored_fit$glm_mus, newdata=Xs_new, type="link")
+  pi1s_new <- predict(gamma_glm_censored_fit$glm_pi1s, newdata=Xs_new, type="response")
+
+  alphas_new <- pmin(alphas_new, alpha_max)
+  pi1s_new <- pmax(pi1_min, pmin(pi1_max, pi1s_new))
+
+  weights_betamix(alpha, pi1s_new, alphas_new, numerator_bh = numerator_bh)
+}
+
+
+#' The IHW-BH/Storey-Betamix multiple testing procedure
+#'
+#' @param Ps       Numeric vector of unadjusted p-values.
+#' @param Xs       Numeric vector or matrix with covariates
+#' @param alpha    Significance level at which to apply method
+#' @param tau      Numeric (default: 0.5) level at which to apply Storey's pi0 estimator
+#' @param Storey   Bool (default: FALSE): is the procedure pi0 adaptive or not?
+#' @param numerator_bh Bool (default:TRUE) Define the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
+#' @param ...      Other arguments passed to `censored_betamix_weighter`
+#'
+#' @return         Binary vector of rejected/non-rejected hypotheses.
+#' @export
+ihw_betamix_censored <- function(Ps,Xs, alpha, tau=0.1, Storey=FALSE, numerator_bh=TRUE,...){
+  ihw_bh(Ps,Xs, alpha, censored_betamix_weighter, tau=tau, Storey=Storey, numerator_bh=numerator_bh,...)
 }
 
