@@ -19,11 +19,15 @@ jobs:
       - name: Install dependencies
         working-directory: ./IHWStatsPaper
         run: |
-          install.packages(c("remotes", "rcmdcheck", "BiocManager"))
+          install.packages(c("remotes", "rcmdcheck", "BiocManager","covr"))
           BiocManager::install("IHW")
           remotes::install_deps(dependencies = TRUE)
         shell: Rscript {0}
       - name: Check
         working-directory: ./IHWStatsPaper
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
+        shell: Rscript {0}
+      - name: Test coverage
+        working-directory: ./IHWStatsPaper
+        run: covr::codecov()
         shell: Rscript {0}
