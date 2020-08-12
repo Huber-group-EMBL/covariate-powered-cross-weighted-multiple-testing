@@ -29,5 +29,5 @@ jobs:
         shell: Rscript {0}
       - name: Test coverage
         working-directory: ./IHWStatsPaper
-        run: covr::codecov()
+        run: covr::codecov(path = "./IHWStatsPaper")
         shell: Rscript {0}
