@@ -2,6 +2,7 @@ library(doParallel)
 library(tidyverse)
 library(IHWStatsPaper)
 
+set.seed(1)
 betamix_sim_combs <- rbind(expand.grid(mu_slope = seq(2, 3, length=2),
                                        seed = 1:2))
 

@@ -43,34 +43,24 @@ cars_ttest_data <- function(m=10000, k=10, n_x=50, n_y=50,
 
 
 #' Data preprocessing for CARS to be used with p-value methods
+#'
+#' @param X,Y,variance X,Y matrices with data for two groups used for two-sample multiple testing and per-test per-sample variance matrix, as returned
+#'                     by the `cars_ttest_data` function.
+#' @return Data.frame with columns `pvalue` and `t_2` (ancillary --independent under the null-- testing statistic)
 #' @export
+#' @examples
+#' cars_example_data <- cars_ttest_data(m=10000, k=2000, n_x=50, n_y=50, mu_x_1 = 0.5,
+#                                     mu_x_2 = 0.25, mu_y_2 = 0.25)
+#' cars_example_preprocess <- with(cars_example_data, CARS_preprocess(x, y, var_mat))
 CARS_preprocess <- function(X,Y, variance){
-  #Validate input types.
-  if (is.data.frame(X)){
-    X.names=names(X)
-    X = as.matrix(X,rownames.force=F)
-  } else if (is.matrix(X))
-    X.names=colnames(X)
-  else
-    stop('Input X must be a matrix or data frame')
-
-  if (is.data.frame(Y)){
-    Y.names=names(Y)
-    Y = as.matrix(Y,rownames.force=F)
-  } else if (is.matrix(Y))
-    Y.names=colnames(Y)
-  else
-    stop('Input Y must be a matrix or data frame')
-
-  #validate input dimensions.
   n_x <- ncol(X); m <- nrow(X);
   stopifnot(nrow(Y)==m)
   n_y <- ncol(Y);
   n <- n_x+n_y;
 
   #Calculate the mean of X, Y for each location
-  X.mean <- rowMeans(X);
-  Y.mean <- rowMeans(Y);
+  X.mean <- base::rowMeans(X);
+  Y.mean <- base::rowMeans(Y);
 
   #Assign corresponding variances for each location
   X.var <- variance[,1];
@@ -98,10 +88,6 @@ CARS_preprocess <- function(X,Y, variance){
   preprocessed_df
 }
 
-#  example call:
-#cars_example_data <- cars_ttest_data(m=10000, k=2000, n_x=50, n_y=50, mu_x_1 = 0.5,
-#                                     mu_x_2 = 0.25, mu_y_2 = 0.25)
-#cars_example_preprocess <- with(cars_example_data, CARS_preprocess(x,y, var_mat))
 
 apply_cars_methods <- function(cars_data, alpha){
   Hs <- cars_data$H
@@ -113,21 +99,33 @@ apply_cars_methods <- function(cars_data, alpha){
   BH_res <- stats::p.adjust(cars_prepr$pvalue, method="BH") <= alpha
 
   ihw_cars_res <-  ihw_cars(cars_prepr$t_1,cars_prepr$t_2, alpha, Storey=TRUE)
-  ihw_nmeth_res <- ihw_nmeth_wrapper(cars_prepr$pvalue,IHW::
-                                     groups_by_filter(cars_prepr$t_2, 10),
+  ihw_nmeth_res <- ihw_nmeth_wrapper(cars_prepr$pvalue,
+                                     IHW::groups_by_filter(cars_prepr$t_2, 10),
                                      alpha, pre_bin=FALSE, Storey=TRUE) #with Storey
 
   # collect results
   res <- bind_rows(mutate( fdp_eval(Hs, BH_res), method="BH"),
                    mutate( fdp_eval(Hs, cars_res), method="CARS"),
                    mutate( fdp_eval(Hs, cars_sparse_res), method="CARS-sparse"),
-                   mutate( fdp_eval(Hs, ihw_cars_res), method="IHW-CARS"),
-                   mutate( fdp_eval(Hs, ihw_nmeth_res), method="IHW-Grenander"))
+                   mutate( fdp_eval(Hs, ihw_cars_res), method="IHW-Storey-CARS"),
+                   mutate( fdp_eval(Hs, ihw_nmeth_res), method="IHW-Storey-Grenander"))
 
   res
 }
 
-
+#' Apply multiple testing methods to the simultaneous two-sample testing simulation.
+#
+#' @param m Number of hypotheses (default: m=10000)
+#' @param k Number of alternatives (default: k=10)
+#' @param mu_x_1 Signal strength for first locations of X
+#' @param mu_x_2 Signal strength for locations (k+1) to 2k of X
+#' @param seed     Integer; used for printing which simulation it running (does not set an actual RNG seed)
+#' @param n_x Number of samples for X (first group) in each test (default: n_x=50)
+#' @param n_y Number of samples for Y (second group) in each test (default: n_y=50)
+#' @param alpha Numeric (default: 0.1), nominal significance level at which to apply methods
+#'
+#' @return Data frame with FDP and Power of different methods on this simulation.
+#' @export
 eval_cars_sim <- function(m, k, mu_x_1, mu_x_2 , seed, n_x=50, n_y=50, alpha=0.1){
   print(paste0("seed:",seed," and k:", k))
 
@@ -136,6 +134,6 @@ eval_cars_sim <- function(m, k, mu_x_1, mu_x_2 , seed, n_x=50, n_y=50, alpha=0.1
 
   mutate(apply_cars_methods(cars_data, alpha),
          m = m, k = k, seed = seed, n_x = n_x, n_y = n_y,
-         mu_x_1 = mu_x_1, mu_x_2 = mu_x_2)
+         mu_x_1 = mu_x_1, mu_x_2 = mu_x_2, mu_y_2 = mu_x_2)
 }
 

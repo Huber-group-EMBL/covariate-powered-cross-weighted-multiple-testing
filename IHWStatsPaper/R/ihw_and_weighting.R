@@ -238,3 +238,45 @@ ihw_betamix_censored <- function(Ps,Xs, alpha, tau=0.1, Storey=FALSE, numerator_
   ihw_bh(Ps,Xs, alpha, censored_betamix_weighter, tau=tau, Storey=Storey, numerator_bh=numerator_bh,...)
 }
 
+#' Heuristic multiple testing weights based on CARS procedure
+#'
+#' @param primary_stats   Numeric vector of z-score statistics (converted to p-values via 2*(1-pnorm(abs(primary_stats)))).
+#' @param Xs              Numeric vector or matrix with covariates
+#' @param Xs_new          Numeric vector or matrix with covariates  (out-of-fold).
+#' @param tau             Numeric, the level at which tau-censoring is applied.
+#' @param alpha           Significance level at which to apply method (not used for this weight learning method)
+#' @return Numeric vector with weights.
+#' @export
+cars_weighter <- function(primary_stats, Xs, Xs_new, tau, alpha){
+  cars_res <- CARS_extended(primary_stats, Xs, alpha, option="regular")
+  Xs_quantiles <- stats::quantile(Xs_new, seq(0,to=1, length.out=100))
+  cars_get_threshold <- function(x, cars_fun, threshold){
+    zs <- seq(1, 5, length=200)
+    idx_min <- which.min(abs( cars_fun(zs,x) - threshold))
+    if (idx_min == 1){
+      return(4) #heuristic for the rare case that local fdr estimates are very unstable, leads to small but non-zero weight for that hypothesis
+    } else {
+      return(zs[idx_min])
+    }
+  }
+  ts <- sapply(Xs_quantiles, function(x)  cars_get_threshold(x, cars_res$cars_fun, cars_res$th))
+  ws <- approx(x=Xs_quantiles,y=2*(1-pnorm(ts)), xout=Xs_new)$y
+  ws <- ws*length(ws)/sum(ws)
+  ws
+}
+
+
+#' The IHW-BH/Storey-CARS multiple testing procedure
+#'
+#' @param primary_stats   Numeric vector of z-score statistics (converted to p-values via 2*(1-pnorm(abs(primary_stats)))).
+#' @param Xs              Numeric vector or matrix with covariates
+#' @param alpha           Significance level at which to apply method
+#' @param tau             Numeric (default: 0.5) level at which to apply Storey's pi0 estimator
+#' @param Storey          Bool (default: FALSE): is the procedure pi0 adaptive or not?
+#' @param ...             Other arguments passed to `cars_weighter`
+#'
+#' @return         Binary vector of rejected/non-rejected hypotheses.
+#' @export
+ihw_cars <- function(primary_stats, Xs, alpha, Storey=FALSE,...){
+  ihw_bh(primary_stats, Xs, alpha, cars_weighter, tau=0.5, stat_type="zscore", Storey=Storey,...)
+}
