@@ -9,7 +9,6 @@
 #' @param t_2   Numeric vector of secondary statistic
 #' @param alpha    Significance level at which to control FDR
 #' @param tau   Threshold for choosing interesting locations for density estimation (default 0.9)
-#' @param variance Numeric matrix with variances for each test/group.
 #' @param option Currently only supports 'regular' (and not sparse from the CARS package)
 #'
 #' @return A list that contains `de`, i.e., the vector with the significant tests and `cars_fun` which is a function that

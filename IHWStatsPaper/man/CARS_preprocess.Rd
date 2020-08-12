@@ -17,6 +17,6 @@ Data.frame with columns `pvalue` and `t_2` (ancillary --independent under the nu
 Data preprocessing for CARS to be used with p-value methods
 }
 \examples{
-cars_example_data <- cars_ttest_data(m=10000, k=2000, n_x=50, n_y=50, mu_x_1 = 0.5,
+cars_example_data <- cars_ttest_data(m=10000, k=2000, n_x=50, n_y=50, mu_x_1 = 0.5, mu_x_2 = 0.25, mu_y_2 = 0.25)
 cars_example_preprocess <- with(cars_example_data, CARS_preprocess(x, y, var_mat))
 }

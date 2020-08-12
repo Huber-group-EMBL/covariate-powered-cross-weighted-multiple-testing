@@ -16,8 +16,6 @@ CARS_extended(t_1, t_2, alpha, tau = 0.9, option = "regular")
 \item{tau}{Threshold for choosing interesting locations for density estimation (default 0.9)}
 
 \item{option}{Currently only supports 'regular' (and not sparse from the CARS package)}
-
-\item{variance}{Numeric matrix with variances for each test/group.}
 }
 \value{
 A list that contains `de`, i.e., the vector with the significant tests and `cars_fun` which is a function that
