@@ -1,4 +1,24 @@
-CARS_extended <- function(t_1, t_2, alpha, tau=0.9, option=c('sparse','regular')){
+#' Modified CARS function
+#'
+#' Compared to the `CARS::CARS` function, there are three main differences:
+#' 1) this function takes input that has already been summarized.
+#' 2) it returns additional information (cf. below).
+#' 3) we assume that we have Gaussian test-statistics with known variance.
+
+#' @param t_1   Numeric vector of primary z-score statistics (converted to p-values via 2*(1-pnorm(abs(primary_stats)))).
+#' @param t_2   Numeric vector of secondary statistic
+#' @param alpha    Significance level at which to control FDR
+#' @param tau   Threshold for choosing interesting locations for density estimation (default 0.9)
+#' @param variance Numeric matrix with variances for each test/group.
+#' @param option Currently only supports 'regular' (and not sparse from the CARS package)
+#'
+#' @return A list that contains `de`, i.e., the vector with the significant tests and `cars_fun` which is a function that
+#'         maps t_1,t_2 to the estimated local fdr.
+#'
+#' @importFrom np npudensbw
+#' @importFrom np npudens
+#' @export
+CARS_extended <- function(t_1, t_2, alpha, tau=0.9, option='regular'){
 
   t_1.pval <- 2*stats::pnorm(-abs(t_1));
   m <- length(t_1)
@@ -18,21 +38,13 @@ CARS_extended <- function(t_1, t_2, alpha, tau=0.9, option=c('sparse','regular')
   t_2.Lfdr.Est[which(t_2.Lfdr.Est>1)] <- 1;
   S <- which(t_1.pval<=0.5);
 
-  bandwidth <- np::npudensbw(~t_1[S]+t_2[S],bwmethod="normal-reference")$bw;
+  bandwidth <- npudensbw(~t_1[S]+t_2[S],bwmethod="normal-reference")$bw;
   hx <- bandwidth[1];
   ht <- bandwidth[2];
   if (option=='regular'){
     # Calculate the estimated CARS statistics based on bivariate density estimation for denominator
-    cars.denominator.object <- np::npudens(~t_1+t_2,bws=bandwidth)
+    cars.denominator.object <- npudens(~t_1+t_2,bws=bandwidth)
     cars.denominator <- cars.denominator.object$dens
-  }else if(option=='sparse'){
-    # Calculate the estimated CARS statistics based on decomposed bivariate density estimation for denominator (null + non-null on t_2)
-    t_2.pval <- 2*stats::pnorm(-abs(t_2));
-    S_t2 <- which(t_2.pval<=0.2);
-    screened.den.Est <- stats::density(t_1[S_t2],from=min(t_1[S_t2])-10,to=max(t_2[S_t2])+10,n=1000);
-    screened.den.Est <- CARS::lin.itp(t_1,screened.den.Est$x,screened.den.Est$y);
-    #Sparse option, decompose the denominator into two components
-    cars.denominator <- (1-t_2.p.Est)*stats::dnorm(t_2)*stats::dnorm(t_1)+(1-t_2.Lfdr.Est)*t_2.density.Est*screened.den.Est;
   }
 
   #Estimate Correction

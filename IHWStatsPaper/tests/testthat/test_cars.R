@@ -19,7 +19,7 @@ cars_data_preprocess$secondary_pvalue <- pv2
 set.seed(10)
 main_cars <- CARS::CARS(cars_data$x, cars_data$y, 0.2, tau=0.9, variance=cars_data$var_mat, option="regular")
 set.seed(10)
-custom_cars <- IHWStatsPaper:::CARS_extended(cars_data_preprocess$t_1, cars_data_preprocess$t_2, 0.2, tau=0.9, option = "regular")
+custom_cars <- IHWStatsPaper::CARS_extended(cars_data_preprocess$t_1, cars_data_preprocess$t_2, 0.2, tau=0.9, option = "regular")
 
 expect_equal(custom_cars$de, main_cars$de)
 expect_true(abs(custom_cars$th - main_cars$th) <= 0.001)
@@ -38,9 +38,9 @@ cars_fun_at_3 <- cars_fun_tmp(t1_seq, 3)
 #lines(t1_seq, cars_fun_at_3, col='red')
 
 set.seed(10)
-ihw_cars_res <- ihw_cars(cars_example_preprocess$t_1, cars_example_preprocess$t_2, 0.2, return_weights=TRUE, kfolds=2, Storey=FALSE)
+ihw_cars_res <- ihw_cars(cars_data_preprocess$t_1, cars_data_preprocess$t_2, 0.2, return_weights=TRUE, kfolds=2, Storey=FALSE)
 set.seed(10)
-ihw_cars_rjs <- ihw_cars(cars_example_preprocess$t_1, cars_example_preprocess$t_2, 0.2, return_weights=FALSE, kfolds=2, Storey=FALSE)
+ihw_cars_rjs <- ihw_cars(cars_data_preprocess$t_1, cars_data_preprocess$t_2, 0.2, return_weights=FALSE, kfolds=2, Storey=FALSE)
 
 
 expect_equal(length(unique(ihw_cars_res$folds)),2)
@@ -49,11 +49,11 @@ fold2_idx = ihw_cars_res$folds==2
 
 
 set.seed(10)
-ihw_cars_refit <- ihw_cars(cars_example_preprocess$t_1, cars_example_preprocess$t_2, 0.2, return_weights=TRUE, Storey=FALSE, folds=ihw_cars_res$folds)
+ihw_cars_refit <- ihw_cars(cars_data_preprocess$t_1, cars_data_preprocess$t_2, 0.2, return_weights=TRUE, Storey=FALSE, folds=ihw_cars_res$folds)
 set.seed(10)
-cars_wts_fold1 <- cars_weighter(cars_example_preprocess$t_1[fold2_idx], cars_example_preprocess$t_2[fold2_idx], cars_example_preprocess$t_2[fold1_idx],
+cars_wts_fold1 <- cars_weighter(cars_data_preprocess$t_1[fold2_idx], cars_data_preprocess$t_2[fold2_idx], cars_data_preprocess$t_2[fold1_idx],
                                 tau=0.5, alpha=0.2)
-cars_wts_fold2 <- cars_weighter(cars_example_preprocess$t_1[fold1_idx], cars_example_preprocess$t_2[fold1_idx], cars_example_preprocess$t_2[fold2_idx],
+cars_wts_fold2 <- cars_weighter(cars_data_preprocess$t_1[fold1_idx], cars_data_preprocess$t_2[fold1_idx], cars_data_preprocess$t_2[fold2_idx],
                                              tau=0.5, alpha=0.2)
 
 
@@ -66,17 +66,17 @@ all_wts[fold2_idx] <- cars_wts_fold2
 
 expect_true(max(abs(all_wts-ihw_cars_refit$ws)) <= 0.0000001)
 
-expect_equal(tau_weighted_bh(cars_example_preprocess$pvalue, all_wts, 0.5) <= 0.2, ihw_cars_refit$rjs)
+expect_equal(tau_weighted_bh(cars_data_preprocess$pvalue, all_wts, 0.5) <= 0.2, ihw_cars_refit$rjs)
 
 set.seed(1)
-ihw_cars_storey_res <-ihw_cars(cars_example_preprocess$t_1, cars_example_preprocess$t_2, 0.2, return_weights=TRUE, Storey=TRUE, folds=ihw_cars_res$folds)
+ihw_cars_storey_res <-ihw_cars(cars_data_preprocess$t_1, cars_data_preprocess$t_2, 0.2, return_weights=TRUE, Storey=TRUE, folds=ihw_cars_res$folds)
 
 expect_true(sum(ihw_cars_storey_res$rjs) > sum(ihw_cars_refit$rjs))
 
 expect_true(abs(sum(ihw_cars_storey_res$ws[fold1_idx]) - sum(fold1_idx)/ihw_cars_storey_res$storey_pi0s[1]) <= 0.0001)
 expect_true(abs(sum(ihw_cars_storey_res$ws[fold2_idx]) - sum(fold2_idx)/ihw_cars_storey_res$storey_pi0s[2]) <= 0.0001)
 
-ihw_df <- data.frame(Ps = cars_example_preprocess$pvalue,
+ihw_df <- data.frame(Ps = cars_data_preprocess$pvalue,
                      Ws = ihw_cars_refit$ws,
                      Ws_storey = ihw_cars_storey_res$ws,
                      folds = ihw_cars_refit$folds,
