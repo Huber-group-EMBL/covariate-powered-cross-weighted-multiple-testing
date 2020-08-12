@@ -11,19 +11,19 @@
 #' @export
 ihw_nmeth_wrapper <- function(Ps, Xs, alpha, pre_bin = FALSE, Storey=FALSE){
   if (pre_bin == "2D"){
-    binning_idx <- interaction( cut(Xs[,1],5), cut(Xs[,2],5))
+    binning_idx <- base::interaction( cut(Xs[,1],5), cut(Xs[,2],5))
   } else if (pre_bin == "1D"){
     binning_idx <- IHW::groups_by_filter(Xs, 10)
   } else {
     binning_idx <- as.factor(Xs)
   }
   if (Storey){
-    ihw_nmeth_fit <- ihw(Ps, binning_idx, alpha, lambdas=Inf,
+    ihw_nmeth_fit <- IHW::ihw(Ps, binning_idx, alpha, lambdas=Inf,
                          null_proportion=TRUE, null_proportion_level=0.5)
   } else {
-    ihw_nmeth_fit <- ihw(Ps, binning_idx, alpha, lambdas=Inf)
+    ihw_nmeth_fit <- IHW::ihw(Ps, binning_idx, alpha, lambdas=Inf)
   }
-  rejected_hypotheses(ihw_nmeth_fit)
+  IHW::rejected_hypotheses(ihw_nmeth_fit)
 }
 
 

@@ -81,6 +81,11 @@ lfdr_nocensor <- get_localfdrs_betamix(max_t_nocensor, fit1_nocovariates$pi1s[1]
 t_t <- get_thresholds_betamix(lfdr_nocensor, fit1_nocovariates$pi1s[1], fit1_nocovariates$alphas[1])
 expect_equal(as.numeric(t_t), max_t_nocensor)
 
+opt_wts <- weights_betamix(0.1,fit1_nocovariates$pi1s,  fit1_nocovariates$alpha, numerator_bh=TRUE)
+expect_true(all(abs( opt_wts - 1.0) < 1e-9))
+
+opt_wts_nobh <- weights_betamix(0.1,fit1_nocovariates$pi1s,  fit1_nocovariates$alpha, numerator_bh=FALSE)
+expect_true(all(abs( opt_wts_nobh - 1.0) < 1e-9))
 
 
 # Check betamix simulation
@@ -98,3 +103,90 @@ expect_true( mean(manual_lfdrs[oracle_rjs]) <= 0.2)
 all_ts <- get_thresholds_betamix(0.1, betamix_sim$pi1s, betamix_sim$alphas)
 ts_to_lfdrs <- get_localfdrs_betamix(all_ts, betamix_sim$pi1s, betamix_sim$alphas)
 expect_true(all( abs(ts_to_lfdrs - 0.1) <= 0.00001))
+
+
+opt_wts_betamix <- weights_betamix(0.2,  betamix_sim$pi1s, betamix_sim$alphas, numerator_bh=FALSE)
+expect_equal(sum(opt_wts_betamix), 20000)
+
+t_offset_weights <- uniroot(function(t)  get_tailfdr_betamix(t*opt_wts_betamix, betamix_sim$pi1s, betamix_sim$alphas, numerator_bh=FALSE)-0.2, c(1e-10,0.1))
+expect_true(abs(get_tailfdr_betamix(t_offset_weights$root*opt_wts_betamix, betamix_sim$pi1s, betamix_sim$alphas, numerator_bh=FALSE) - 0.2) < 0.001)
+loc_fdr_contours <- get_localfdrs_betamix(t_offset_weights$root*opt_wts_betamix, betamix_sim$pi1s, betamix_sim$alphas)
+expect_true( sqrt(var(loc_fdr_contours)) < 0.001*min(loc_fdr_contours))
+
+
+opt_wts_betamix_bh <- weights_betamix(0.2,  betamix_sim$pi1s, betamix_sim$alphas, numerator_bh=TRUE)
+expect_equal(sum(opt_wts_betamix_bh), 20000)
+
+t_offset_weights_bh <- uniroot(function(t)  get_tailfdr_betamix(t*opt_wts_betamix_bh, betamix_sim$pi1s, betamix_sim$alphas, numerator_bh=TRUE)-0.2, c(1e-10,0.1))
+expect_true(t_offset_weights_bh$root < t_offset_weights$root)
+expect_true(abs(get_tailfdr_betamix(t_offset_weights_bh$root*opt_wts_betamix_bh, betamix_sim$pi1s, betamix_sim$alphas, numerator_bh=TRUE) - 0.2) < 0.001)
+loc_fdr_contours_bh <- get_localfdrs_betamix(t_offset_weights_bh$root*opt_wts_betamix_bh, betamix_sim$pi1s, betamix_sim$alphas)
+expect_true( sqrt(var(loc_fdr_contours_bh)) < 0.001*min(loc_fdr_contours_bh))
+
+# Check IHW-NMeth wrapper
+
+myfac <-  interaction(cut(betamix_sim$Xs[,1],5), cut(betamix_sim$Xs[,2],5))
+expect_equal(length(levels(myfac)), 5*5)
+
+wrap_res1 <- ihw_nmeth_wrapper(betamix_sim$Ps, interaction( cut(betamix_sim$Xs[,1],5), cut(betamix_sim$Xs[,2],5)), 0.2,)
+wrap_res2 <- IHW::ihw(betamix_sim$Ps, myfac, 0.2, lambdas=Inf)
+expect_equal(IHW::rejected_hypotheses(wrap_res2), wrap_res1)
+expect_equal(IHW::groups_factor(wrap_res2), myfac)
+
+# CHECK IHW-BetaMix implementation
+
+set.seed(1)
+ihw_betamix_res <- ihw_betamix_censored(betamix_sim$Ps, betamix_sim$Xs, 0.2, return_weights=TRUE, kfolds=2, Storey=FALSE)
+set.seed(1)
+ihw_betamix_rjs <- ihw_betamix_censored(betamix_sim$Ps, betamix_sim$Xs, 0.2, return_weights=FALSE, kfolds=2)
+
+expect_equal(length(unique(ihw_betamix_res$folds)),2)
+fold1_idx = ihw_betamix_res$folds==1
+fold2_idx = ihw_betamix_res$folds==2
+
+btmix_wts_fold2 <- censored_betamix_weighter(betamix_sim$Ps[fold1_idx], betamix_sim$Xs[fold1_idx,], betamix_sim$Xs[fold2_idx,],
+                                             tau=0.1, alpha=0.2, numerator_bh=TRUE)
+btmix_wts_fold1 <- censored_betamix_weighter(betamix_sim$Ps[fold2_idx], betamix_sim$Xs[fold2_idx,], betamix_sim$Xs[fold1_idx,],
+                                             tau=0.1, alpha=0.2, numerator_bh=TRUE)
+
+expect_true(abs(sum(btmix_wts_fold1) - sum(fold1_idx)) <= 0.0001)
+expect_true(abs(sum(btmix_wts_fold2) - sum(fold2_idx)) <= 0.0001)
+
+all_wts <- rep(NA, 20000)
+all_wts[fold1_idx] <- btmix_wts_fold1
+all_wts[fold2_idx] <- btmix_wts_fold2
+
+expect_equal(all_wts, ihw_betamix_res$ws)
+
+expect_equal(tau_weighted_bh(betamix_sim$Ps, all_wts, 0.1) <= 0.2, ihw_betamix_rjs)
+
+set.seed(1)
+ihw_betamix_storey_res <- ihw_betamix_censored(betamix_sim$Ps, betamix_sim$Xs, 0.2, return_weights=TRUE, kfolds=2, Storey=TRUE)
+
+expect_true(sum(ihw_betamix_storey_res$rjs) > sum(ihw_betamix_res$rjs))
+
+expect_true(abs(sum(ihw_betamix_storey_res$ws[fold1_idx]) - sum(fold1_idx)/ihw_betamix_storey_res$storey_pi0s[1]) <= 0.0001)
+expect_true(abs(sum(ihw_betamix_storey_res$ws[fold2_idx]) - sum(fold2_idx)/ihw_betamix_storey_res$storey_pi0s[2]) <= 0.0001)
+
+ihw_df <- data.frame(Ps = betamix_sim$Ps,
+                     Ws = ihw_betamix_res$ws,
+                     Ws_storey = ihw_betamix_storey_res$ws,
+                     folds = ihw_betamix_res$folds,
+                     adj_p = ihw_betamix_res$adj_p,
+                     rjs = ihw_betamix_res$rjs)
+
+ihw_df_summary <- group_by(ihw_df, folds) %>% summarize(sum_Ws = sum(Ws), n=n())
+expect_equal(ihw_df_summary$sum_Ws, ihw_df_summary$n)
+
+
+
+# Check one-sided betamix simulation
+
+betamix_sim_onesided <- beta_unif_sim(20000, mus_slope=2.5, one_sided_test=TRUE,prob_one_sided=0.5)
+
+set.seed(1)
+betamix_sim_twosided <- beta_unif_sim(20000, mus_slope=2.5, one_sided_test=FALSE,prob_one_sided=0.7)
+set.seed(1)
+betamix_sim_onesided_zeroprob <- beta_unif_sim(20000, mus_slope=2.5, one_sided_test=TRUE,prob_one_sided=0.0)
+
+expect_equal(betamix_sim_twosided$oracle_lfdrs, betamix_sim_onesided_zeroprob$oracle_lfdrs)

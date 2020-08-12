@@ -200,7 +200,15 @@ gamma_glm_censored_em <- function(censored_Ps, Xs,  tau_censor, formula_rhs="~X1
        alphas = alphas_iter, pi1s = pi1s_iter)
 }
 
-
+#' Optimal weights based on a fitted conditional Beta-mixture model
+#'
+#' @param alpha    Nominal testing level
+#' @param pi1s   Numeric vector with probability i-th hypothesis is an alternative
+#' @param alphas  Numeric vector of first parameter of alternative Beta distribution (Beta(a_i, 1)).
+#' @param numerator_bh  If TRUE (default is FALSE) then replace pi0 in numerator by 1.
+#'
+#' @return Numeric vector with weights.
+#' @export
 weights_betamix <- function(alpha, pi1s, alphas, numerator_bh=FALSE){
   wrapped_fun <- function(c) {
     ts <- get_thresholds_betamix(c, pi1s, alphas)
