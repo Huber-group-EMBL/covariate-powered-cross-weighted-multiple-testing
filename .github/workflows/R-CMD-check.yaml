@@ -17,8 +17,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: r-lib/actions/setup-r@master
       - name: Install dependencies
+        working-directory: ./IHWStatsPaper
         run: |
-          working-directory: ./IHWStatsPaper
           install.packages(c("remotes", "rcmdcheck", "BiocManager"))
           BiocManager::install("IHW")
           remotes::install_deps(dependencies = TRUE)
