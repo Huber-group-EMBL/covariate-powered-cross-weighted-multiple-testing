@@ -13,16 +13,17 @@ name: R-CMD-check
 jobs:
   R-CMD-check:
     runs-on: macOS-latest
-    working-directory: IHWStatsPaper
     steps:
       - uses: actions/checkout@v2
       - uses: r-lib/actions/setup-r@master
       - name: Install dependencies
+        working-directory: ./IHWStatsPaper
         run: |
           install.packages(c("remotes", "rcmdcheck", "BiocManager"))
           BiocManager::install("IHW")
           remotes::install_deps(dependencies = TRUE)
         shell: Rscript {0}
       - name: Check
+        working-directory: ./IHWStatsPaper
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
         shell: Rscript {0}
