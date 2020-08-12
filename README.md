@@ -25,4 +25,5 @@ First, below we provide links to pre-rendered vignettes that reproduce figures.
 * **code/**: Main *.R* files that implement benchmarked methods and run simulations. See README.md of subdirectory for description of files within.
 * **precomputed_results/**: Simulation results from scripts in the *code* directory that have been pre-computed/cached.
 * **vignettes/**: R markdown documents that produce the pre-rendered vignettes above upon being compiled (using files saved in the *precomputed_results* folder). The only exception is the vignette for the hQTL data analysis example, which we include as part of the Bioconductor package [IHWpaper](http://bioconductor.org/packages/devel/IHWpaper).
-* **IHWStatsPaper/**: The main functions in the *code* directory wrapped as a standalone R package. Many of these will be ported to the Bioconductor IHW package,
+* **IHWStatsPaper/**: The main functions in the *code* directory wrapped as a standalone R package. Many of these will be ported to the Bioconductor IHW package.[![R build status](https://github.com/nignatiadis/IHWStatsPaper/workflows/R-CMD-check/badge.svg)](https://github.com/nignatiadis/IHWStatsPaper/actions) 
+[![codecov](https://codecov.io/gh/nignatiadis/IHWStatsPaper/branch/master/graph/badge.svg)](https://codecov.io/gh/nignatiadis/IHWStatsPaper)
