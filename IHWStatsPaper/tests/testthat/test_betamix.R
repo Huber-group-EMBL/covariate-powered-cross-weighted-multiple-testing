@@ -168,6 +168,7 @@ expect_true(sum(ihw_betamix_storey_res$rjs) > sum(ihw_betamix_res$rjs))
 expect_true(abs(sum(ihw_betamix_storey_res$ws[fold1_idx]) - sum(fold1_idx)/ihw_betamix_storey_res$storey_pi0s[1]) <= 0.0001)
 expect_true(abs(sum(ihw_betamix_storey_res$ws[fold2_idx]) - sum(fold2_idx)/ihw_betamix_storey_res$storey_pi0s[2]) <= 0.0001)
 
+# ihw_betamix_storey_res$storey_pi0s[1] vs sum(ihw_betamix_storey_res$ws[fold1_idx]*(1-betamix_sim$Hs[fold1_idx]))/sum(fold1_idx)
 ihw_df <- data.frame(Ps = betamix_sim$Ps,
                      Ws = ihw_betamix_res$ws,
                      Ws_storey = ihw_betamix_storey_res$ws,
@@ -190,3 +191,9 @@ set.seed(1)
 betamix_sim_onesided_zeroprob <- beta_unif_sim(20000, mus_slope=2.5, one_sided_test=TRUE,prob_one_sided=0.0)
 
 expect_equal(betamix_sim_twosided$oracle_lfdrs, betamix_sim_onesided_zeroprob$oracle_lfdrs)
+
+#betamix_sim <- beta_unif_sim(10000, mus_slope=1.5)
+#ihw_betamix_res2 <- ihw_betamix_censored(betamix_sim$Ps, betamix_sim$Xs, 0.1, return_weights=TRUE, kfolds=5, Storey=TRUE)
+#ihw_betamix_res2$storey_pi0s
+#tmp_ids <- split(1:10000, ihw_betamix_res2$folds)
+#sapply(tmp_ids, function(us)  sum(ihw_betamix_res2$ws[us]*(1-betamix_sim$Hs[us]))/length(us))

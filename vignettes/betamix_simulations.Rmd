@@ -40,7 +40,6 @@ pretty_colors <- beyonce_colors[c(2,1,3:5)]
 #beyonce 1 -> IHW Grenander  + shape 13
 #CARS beyonce -> 3 + shape 0
 #CARS-sparse beyonce -> 4    + shape 1  
-method_names_saved<- c("BH", "Lfdr-oracle", "Lfdr-EM", "AdaPT", "IHW-BetaMix", "IHW-Grenander")
 method_names <- c("BH", "Clfdr-oracle", "Clfdr-EM", "AdaPT", "IHW-Storey-BetaMix", "IHW-BH-Grenander")
 method_colors <- c("Black", beyonce_colors[c(3,4, 6, 2, 1)])
 names(method_colors) <- method_names
@@ -53,9 +52,10 @@ names(method_shapes) <- method_names
 
 ## Load result files
 
+
+
 ```{r}
-betamix_r <- c(readRDS(file="../precomputed_results/betamix_simulations.Rds"),
-              readRDS(file="../precomputed_results/betamix_simulations_lfdr.Rds"))
+betamix_r <-readRDS(file="../precomputed_results/betamix_simulations.Rds")
 ```
 
 ```{r}
@@ -67,11 +67,7 @@ betamix_res <-  bind_rows(unlist(betamix_r, recursive = FALSE)) %>%
             se_power = sd(pow, na.rm=TRUE)/sqrt(n)) %>%
   arrange(mu_slope, desc(Power)) %>% 
   ungroup() %>%
-  mutate(method = factor(method, levels=method_names_saved)) %>% 
-  mutate(method = fct_recode(method, "Clfdr-oracle"="Lfdr-oracle", 
-                                     "Clfdr-EM"="Lfdr-EM",
-                                     "IHW-Storey-BetaMix"="IHW-BetaMix",
-                                     "IHW-BH-Grenander"="IHW-Grenander"))
+  mutate(method = factor(method, levels=method_names))
 ```
 
 ## Plot FDR
@@ -105,12 +101,13 @@ power_betamix_plot <- ggplot(betamix_res, aes(x=mu_slope, y=Power, shape=method,
   scale_y_log10(breaks = c(0.003, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4)) + 
   ylab("Power (log scale)") + 
   theme_cowplot()  +
-  theme(legend.title=element_blank())
+  theme(legend.title=element_blank())  #+  theme(legend.position = "none")
 
 power_betamix_plot
 ```
 
 ```{r eval=FALSE}
+#ggsave(power_betamix_plot, filename="power_betamix_nolegend.pdf", width=6/1.2,height=4/1.2)
 ggsave(power_betamix_plot, filename="power_betamix.pdf", width=7.73/1.2,height=4/1.2)
 ```
 
@@ -131,11 +128,7 @@ betamix_onesided_res <-  bind_rows(unlist(betamix_onesided_r, recursive = FALSE)
             se_power = sd(pow, na.rm=TRUE)/sqrt(n)) %>%
   arrange(prob_one_sided, desc(Power)) %>% 
   ungroup() %>%
-  mutate(method = factor(method, levels=method_names_saved)) %>%
-  mutate(method = fct_recode(method, "Clfdr-oracle"="Lfdr-oracle", 
-                                     "Clfdr-EM"="Lfdr-EM",
-                                     "IHW-Storey-BetaMix"="IHW-BetaMix",
-                                     "IHW-BH-Grenander"="IHW-Grenander"))
+  mutate(method = factor(method, levels=method_names))
 ```
 
 ## Plot FDR
