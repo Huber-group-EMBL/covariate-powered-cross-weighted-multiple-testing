@@ -38,6 +38,12 @@ tau_censor1 <- 1e-17
 Ps_all_censor1 <- ifelse(Ps_all >= tau_censor1, Ps_all, 0)
 fit1_censor1 <- gamma_glm_censored_em(Ps_all_censor1, Xs_all, tau_censor1, formula_rhs="~X1")
 
+tau_censor_large <- 0.1
+Ps_all_censor_large <- ifelse(Ps_all >= tau_censor_large, Ps_all, 0)
+ws_censor_large <- censored_betamix_weighter(Ps_all,  Xs_all, Xs_all, tau_censor_large, 0.1)
+ws_censor_large_censor <- censored_betamix_weighter(Ps_all_censor_large,  Xs_all, Xs_all, tau_censor_large, 0.1)
+expect_equal(ws_censor_large, ws_censor_large_censor)
+
 expect_true( abs(fit1$alphas[1] - fit1_censor1$alphas[1]) <= 0.02)
 expect_true( abs(fit1$pi1s[1] -fit1_censor1$pi1s[1]) <= 0.01)
 
@@ -197,3 +203,4 @@ expect_equal(betamix_sim_twosided$oracle_lfdrs, betamix_sim_onesided_zeroprob$or
 #ihw_betamix_res2$storey_pi0s
 #tmp_ids <- split(1:10000, ihw_betamix_res2$folds)
 #sapply(tmp_ids, function(us)  sum(ihw_betamix_res2$ws[us]*(1-betamix_sim$Hs[us]))/length(us))
+
