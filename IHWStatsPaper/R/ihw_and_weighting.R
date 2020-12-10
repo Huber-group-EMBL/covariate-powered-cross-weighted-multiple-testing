@@ -181,7 +181,7 @@ grouped_storey_weighter <- function(Ps, Xs, Xs_new, tau, alpha){
 #' @return         Binary vector of rejected/non-rejected hypotheses.
 #' @export
 ihw_gbh <- function(Ps,Xs, alpha, tau=0.5, Storey=FALSE, ...){
-  ihw_bh(Ps,Xs, alpha, grouped_storey_weighter, tau=tau, Storey=Storey, ...)
+  ihw_bh(Ps, Xs, alpha, grouped_storey_weighter, tau=tau, Storey=Storey, ...)
 }
 
 #' Learn multiple testing weights based on EM fitting of the betamix model and local FDRs
