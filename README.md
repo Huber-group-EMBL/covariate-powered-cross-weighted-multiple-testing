@@ -23,12 +23,13 @@ First, below we provide links to pre-rendered vignettes that reproduce figures.
 ## Subdirectories of this repository
 
 ### **IHWStatsPaper/**
-[![R build status](https://github.com/nignatiadis/IHWStatsPaper/workflows/R-CMD-check/badge.svg)](https://github.com/nignatiadis/IHWStatsPaper/actions) 
-[![codecov](https://codecov.io/gh/nignatiadis/IHWStatsPaper/branch/master/graph/badge.svg)](https://codecov.io/gh/nignatiadis/IHWStatsPaper)
+[![R build status](https://github.com/Huber-group-EMBL/covariate-powered-cross-weighted-multiple-testing/workflows/R-CMD-check/badge.svg)](https://github.com/Huber-group-EMBL/covariate-powered-cross-weighted-multiple-testing/actions) 
+[![codecov](https://codecov.io/gh/Huber-group-EMBL/covariate-powered-cross-weighted-multiple-testing/branch/master/graph/badge.svg)](https://codecov.io/gh/Huber-group-EMBL/covariate-powered-cross-weighted-multiple-testing)
 
 This directory contains `IHWStatsPaper`, a R package wrapping/implementing the different methods compared, the simulation functions, as well as the benchmarking code. It can be installed as follows.
 ```r
-devtools::install_github("Huber-group-EMBL/IHWStatsPaper", subdir="IHWStatsPaper")
+devtools::install_github("Huber-group-EMBL/covariate-powered-cross-weighted-multiple-testing",
+                         subdir="IHWStatsPaper")
 ```
 ### **scripts/**
 R scripts that run the simulations  (see in folder for details).

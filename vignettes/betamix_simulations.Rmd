@@ -35,11 +35,6 @@ pretty_colors <- beyonce_colors[c(2,1,3:5)]
 ```
 
 ```{r}
-#"Black" -> BH + shape 20
-#beyonce 2 -> IHW-CARS + shape 12
-#beyonce 1 -> IHW Grenander  + shape 13
-#CARS beyonce -> 3 + shape 0
-#CARS-sparse beyonce -> 4    + shape 1  
 method_names <- c("BH", "Clfdr-oracle", "Clfdr-EM", "AdaPT", "IHW-Storey-BetaMix", "IHW-BH-Grenander")
 method_colors <- c("Black", beyonce_colors[c(3,4, 6, 2, 1)])
 names(method_colors) <- method_names
@@ -59,7 +54,7 @@ betamix_r <-readRDS(file="../precomputed_results/betamix_simulations.Rds")
 ```
 
 ```{r}
-betamix_res <-  bind_rows(unlist(betamix_r, recursive = FALSE)) %>% 
+betamix_res <-  bind_rows(betamix_r) %>% 
   group_by(method, m, mu_slope) %>%
   summarize(FDR = mean(FDP, na.rm=TRUE),
             Power=mean(pow, na.rm=TRUE),
@@ -120,7 +115,7 @@ betamix_onesided_r <- readRDS(file="../precomputed_results/betamix_onesided_simu
 ```
 
 ```{r}
-betamix_onesided_res <-  bind_rows(unlist(betamix_onesided_r, recursive = FALSE)) %>% 
+betamix_onesided_res <-  bind_rows(betamix_onesided_r) %>% 
   group_by(method, m, prob_one_sided) %>%
   summarize(FDR = mean(FDP, na.rm=TRUE),
             Power=mean(pow, na.rm=TRUE),

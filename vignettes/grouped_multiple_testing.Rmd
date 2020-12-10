@@ -12,9 +12,9 @@ vignette: >
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Setup
+# Setup
 
-### Load packages
+## Load packages
 
 ```{r  message=FALSE,result=FALSE, warning=FALSE}
 library(tidyverse)
@@ -33,7 +33,7 @@ beyonce_colors[6] <- c("#dbcb09") # thicker yellow
 pretty_colors <- beyonce_colors[c(2,1,3:5)]
 
 
-method_names <- c("BH", "SBH", "Clfdr", "GBH-Storey", "IHW-GBH", "IHW-Grenander-Storey", "SABHA")
+method_names <- c("BH", "SBH", "Clfdr", "GBH-Storey", "IHW-GBH-Storey", "IHW-Grenander-Storey", "SABHA")
 method_names_print <- c("BH", "SBH", "Clfdr", "GBH", "IHW-GBH", "IHW-Storey-Grenander", "SABHA")
 
 method_colors <- c("Black", beyonce_colors[c(3:5, 2, 1, 6)])
@@ -43,15 +43,16 @@ method_shapes <- c(20, 0,1,2, 12, 13,2 )
 names(method_shapes) <- method_names_print
 ```
 
-##  Global null simulations from introduction
+#  Global null simulations from introduction
 
 ```{r}
 group_null_res <- readRDS(file= "../precomputed_results/group_null_res_intro.Rds")
 ```
 
 ```{r}
-summarize_group_null_sim_res <- group_by(group_null_res, method, K) %>%
-  summarize(FDR = mean(FDP))
+summarize_group_null_sim_res <- bind_rows(group_null_res) %>%
+                                group_by(method, K) %>%
+                                summarize(FDR = mean(FDP), n_monte_carlo = n())
 ```
 
 ```{r fig.width=6, fig.height=2.5}
@@ -72,12 +73,12 @@ fdr_null_plot
 ggsave(fdr_null_plot, filename="intro_fdr_null_plot.pdf", width=6,height=2.5)
 ```
 
-##  Global null simulations
+#  Global null simulations from Section 5
 
 
 
 ```{r}
-grouped_null <- readRDS(file="../precomputed_results/grouped_null_simulations_all_methods.Rds")  
+grouped_null <- bind_rows(readRDS(file="../precomputed_results/grouped_null_simulations_all_methods.Rds"))
 ```
 
 ```{r}
@@ -89,6 +90,7 @@ summarize_group_null_sim_res <- group_by(grouped_null, method, K_coarse) %>%
   mutate(method = factor(method, levels=method_names)) %>%
   mutate(method = fct_recode(method, 
                             "GBH"="GBH-Storey",
+                            "IHW-GBH" = "IHW-GBH-Storey",
                             "IHW-Storey-Grenander" = "IHW-Grenander-Storey"))
 
 ```
@@ -113,21 +115,25 @@ fdr_grouped_null_plot
 
 
 
-## Simulations with signal
+# Simulations with signal
 
 ```{r}
-group_sim_res <- readRDS(file= "../precomputed_results/grouped_simulations_signal.Rds")
+group_sim_res <- bind_rows(readRDS(file= "../precomputed_results/grouped_simulations_signal.Rds"))
 ```
 
 ```{r}
 summarize_group_sim_res <- group_by(group_sim_res, method, K_coarse) %>%
-                             summarize(FDR = mean(FDP), Power=mean(pow)) %>%
+                             summarize(FDR = mean(FDP), 
+                                       Power=mean(pow), 
+                                       n_monte_carlo = n(),
+                                       pow_se = sd(pow)/sqrt(n_monte_carlo)) %>%
                              arrange(K_coarse, desc(Power)) %>% 
                              ungroup() %>%
                              filter(method %in% method_names) %>%
                              mutate(method = factor(method, levels=method_names)) %>%
                              mutate(method = fct_recode(method, 
                                   "GBH"="GBH-Storey",
+                                  "IHW-GBH" = "IHW-GBH-Storey",
                                   "IHW-Storey-Grenander" = "IHW-Grenander-Storey"))
 ```
 
@@ -147,8 +153,8 @@ fdr_grouped_signal_plot
 ```
 
 ```{r eval=FALSE}
-##fdr_grouped_signal_plot <-  fdr_grouped_signal_plot + theme(legend.position = "none")
-#ggsave(fdr_grouped_signal_plot, filename="fdr_grouped_signal_plot.pdf", width=3.4,height=2.8)
+fdr_grouped_signal_plot <-  fdr_grouped_signal_plot + theme(legend.position = "none")
+ggsave(fdr_grouped_signal_plot, filename="fdr_grouped_signal_plot.pdf", width=3.4,height=2.8)
 ```
 
 ### Plot Power
@@ -167,6 +173,8 @@ power_grouped_signal_plot
 ```
 
 ```{r eval=FALSE}
-ggsave(power_grouped_signal_plot, filename="power_grouped_signal_plot.pdf", width=5.6,height=2.8)
+power_grouped_signal_plot <-  power_grouped_signal_plot + theme(legend.position = "none")
+
+ggsave(power_grouped_signal_plot, filename="power_grouped_signal_plot.pdf", width=3.4,height=2.8)#width=5.6,height=2.8)
 ```
 
