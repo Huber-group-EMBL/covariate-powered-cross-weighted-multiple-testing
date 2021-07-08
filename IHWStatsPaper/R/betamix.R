@@ -88,12 +88,13 @@ betamix_datadriven_lfdr <- function(Ps, Xs, alpha, formula_rhs="~X1+X2", maxiter
 #' @param tau_pi0  Number in (0,1) used for the initialization of the EM algorithm through the Boca-Leek approach (default: 0.5).
 #' @param pi1_min  Numeric in (0,1),  lower bound on conditionally probability of being an alternative (default: 0.01).
 #' @param pi1_max  Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).
+#' @param alpha_min  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.1).
 #' @param alpha_max  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).
 
 #' @return List with parameters of fitted conditional Beta-Uniform mixture
 #' @export
 gamma_glm_basic_em <- function(Ps, Xs, formula_rhs="~X1+X2", maxiter = 50, tau_pi0=0.5,
-                               pi1_min = 0.01, pi1_max = 0.9, alpha_max=0.9){
+                               pi1_min = 0.01, pi1_max = 0.9, alpha_min=0.1, alpha_max=0.9){
   # basic transform
   Ys <- -log(Ps)
   m <- length(Ys)
@@ -117,11 +118,12 @@ gamma_glm_basic_em <- function(Ps, Xs, formula_rhs="~X1+X2", maxiter = 50, tau_p
     glm_mus_iter <- glm( formula(paste("Ys", formula_rhs)), family=Gamma(), weights=Hs_iter, data=Xs )
     # update alphas and Hs
     alphas_iter <- predict(glm_mus_iter, type="link")
-    alphas_iter <- pmin( alphas_iter, alpha_max)
+    alphas_iter <- pmax(alpha_min, pmin( alphas_iter, alpha_max))
     Hs_iter <- 1-(1 - pi1s_iter)/((1 - pi1s_iter)  + pi1s_iter*dbeta(Ps, alphas_iter, 1))
 
     # fit logistic GLM
-    glm_pi1s_iter <- glm(formula(paste("Hs_iter", formula_rhs)), family=quasibinomial(), data=Xs)
+    glm_pi1s_iter <- glm(formula(paste("Hs_iter", formula_rhs)), family=quasibinomial(), data=Xs,
+                         mustart = pi1s_iter)
     # get logistic GLM predictions
     pi1s_iter <-  predict(glm_pi1s_iter, type="response")
     pi1s_iter <- pmax(pi1_min, pmin(pi1_max, pi1s_iter))
@@ -142,17 +144,18 @@ gamma_glm_basic_em <- function(Ps, Xs, formula_rhs="~X1+X2", maxiter = 50, tau_p
 #' @param tau_pi0  Number in (0,1) used for the initialization of the EM algorithm through the Boca-Leek approach (default: 0.5).
 #' @param pi1_min  Numeric in (0,1),  lower bound on conditionally probability of being an alternative (default: 0.01).
 #' @param pi1_max  Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).
+#' @param alpha_min  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.1).
 #' @param alpha_max  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).
 
 #' @return List with parameters of fitted conditional Beta-Uniform mixture
 #' @export
 
 gamma_glm_censored_em <- function(censored_Ps, Xs,  tau_censor, formula_rhs="~X1+X2",
-                                  maxiter = 50, tau_pi0=0.5,
+                                  maxiter = 50, tau_pi0 = 0.5, alpha_min = 0.1,
                                   pi1_min = 0.01, pi1_max = 0.9, alpha_max=0.9){
   # basic transform
   m <- length(censored_Ps)
-  censored_locs <- which(censored_Ps == 0)
+  censored_locs <- which(censored_Ps < tau_censor)
   uncensored_locs <- which(censored_Ps >= tau_censor)
 
   Ys <-  rep(-log(tau_censor/2), length(censored_Ps))
@@ -177,7 +180,7 @@ gamma_glm_censored_em <- function(censored_Ps, Xs,  tau_censor, formula_rhs="~X1
     glm_mus_iter <- glm( formula(paste("Ys", formula_rhs)), family=Gamma(), weights=Hs_iter, data=Xs)
     # update alphas and Hs
     alphas_iter <- predict(glm_mus_iter, type="link")
-    alphas_iter <- pmin( alphas_iter, alpha_max)
+    alphas_iter <- pmax(alpha_min, pmin( alphas_iter, alpha_max))
 
     # E-step for Hs
     Hs_iter[uncensored_locs] <- 1-(1 - pi1s_iter[uncensored_locs])/((1 - pi1s_iter[uncensored_locs])  +
@@ -190,6 +193,7 @@ gamma_glm_censored_em <- function(censored_Ps, Xs,  tau_censor, formula_rhs="~X1
 
     # fit logistic GLM
     glm_pi1s_iter <- glm(formula(paste("Hs_iter", formula_rhs)), family=quasibinomial(), data=Xs)
+    
     # get logistic GLM predictions
     pi1s_iter <-  predict(glm_pi1s_iter, type="response")
     pi1s_iter <- pmax(pi1_min, pmin(pi1_max, pi1s_iter))

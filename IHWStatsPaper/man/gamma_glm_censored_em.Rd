@@ -11,6 +11,7 @@ gamma_glm_censored_em(
   formula_rhs = "~X1+X2",
   maxiter = 50,
   tau_pi0 = 0.5,
+  alpha_min = 0.1,
   pi1_min = 0.01,
   pi1_max = 0.9,
   alpha_max = 0.9
@@ -28,6 +29,8 @@ gamma_glm_censored_em(
 \item{maxiter}{Total number of iterations to run the EM algorithm.}
 
 \item{tau_pi0}{Number in (0,1) used for the initialization of the EM algorithm through the Boca-Leek approach (default: 0.5).}
+
+\item{alpha_min}{Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.1).}
 
 \item{pi1_min}{Numeric in (0,1),  lower bound on conditionally probability of being an alternative (default: 0.01).}
 

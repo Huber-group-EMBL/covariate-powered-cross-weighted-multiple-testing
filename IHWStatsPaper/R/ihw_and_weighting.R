@@ -100,8 +100,13 @@ ihw_bh <- function(primary_stat, Xs, alpha, wt_fitter, tau=0.5,
       Xs_train <- Xs[train_idx,, drop=FALSE]
       Xs_test <- Xs[test_idx,, drop=FALSE]
     }
-    ws_tmp <- wt_fitter(primary_stat[train_idx], Xs_train, Xs_test, tau, alpha, ...)
-    #ws_tmp <- pmin(10, ws_tmp)
+    ws_tmp <- tryCatch(
+      expr = 
+        {wt_fitter(primary_stat[train_idx], Xs_train, Xs_test, tau, alpha, ...)},
+      error = function(e){
+        rep(1, sum(test_idx))
+      })
+  
     if (all(ws_tmp == 0)){
       ws_tmp <- rep(1, length(ws_tmp))
     } else {
@@ -195,14 +200,16 @@ ihw_gbh <- function(Ps,Xs, alpha, tau=0.5, Storey=FALSE, ...){
 #' @param maxiter  (Default: 200) Total number of iterations to run the EM algorithm
 #' @param pi1_min  Numeric in (0,1),  lower bound on conditionally probability of being an alternative (default: 0.01).
 #' @param pi1_max  Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).
+#' @param alpha_min  Numeric in (0,1), lower bound on parameter of alternative Beta distribution (default: 0.1).
 #' @param alpha_max  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).
-#' @param numerator_bh Bool (default:TRUE) Define the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
+#' @param numerator_bh Bool (default:TRUE) Define the numerator of the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
 #' @return Numeric vector with weights of test-set hypotheses
 #' @export
 censored_betamix_weighter <- function(Ps, Xs, Xs_new, tau, alpha,
                                       formula_rhs="~X1+X2",
                                       pi1_min = 0.01,
                                       pi1_max = 0.9,
+                                      alpha_min = 0.1,
                                       alpha_max = 0.9,
                                       maxiter = 200,
                                       numerator_bh = TRUE,
@@ -211,11 +218,12 @@ censored_betamix_weighter <- function(Ps, Xs, Xs_new, tau, alpha,
   gamma_glm_censored_fit <- gamma_glm_censored_em(Ys, Xs, tau, maxiter = maxiter, formula_rhs=formula_rhs, tau_pi0=0.5,
                                                   pi1_min = pi1_min,
                                                   pi1_max = pi1_max,
+                                                  alpha_min = alpha_min,
                                                   alpha_max = alpha_max, ...)
   alphas_new <- predict(gamma_glm_censored_fit$glm_mus, newdata=Xs_new, type="link")
   pi1s_new <- predict(gamma_glm_censored_fit$glm_pi1s, newdata=Xs_new, type="response")
 
-  alphas_new <- pmin(alphas_new, alpha_max)
+  alphas_new <- pmax(alpha_min, pmin(alphas_new, alpha_max))
   pi1s_new <- pmax(pi1_min, pmin(pi1_max, pi1s_new))
 
   weights_betamix(alpha, pi1s_new, alphas_new, numerator_bh = numerator_bh)
@@ -229,7 +237,7 @@ censored_betamix_weighter <- function(Ps, Xs, Xs_new, tau, alpha,
 #' @param alpha    Significance level at which to apply method
 #' @param tau       Numeric (default = 0.1), the level at which tau-censoring is applied.
 #' @param Storey   Bool (default: FALSE): is the procedure pi0 adaptive or not?
-#' @param numerator_bh Bool (default:TRUE) Define the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
+#' @param numerator_bh Bool (default:TRUE) Define the numerator of the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
 #' @param ...      Other arguments passed to `censored_betamix_weighter`
 #'
 #' @return         Binary vector of rejected/non-rejected hypotheses.
@@ -251,14 +259,16 @@ ihw_betamix_censored <- function(Ps,Xs, alpha, tau=0.1, Storey=FALSE, numerator_
 #' @param maxiter  (Default: 200) Total number of iterations to run the EM algorithm
 #' @param pi1_min  Numeric in (0,1),  lower bound on conditionally probability of being an alternative (default: 0.01).
 #' @param pi1_max  Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).
+#' @param alpha_min  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.1).
 #' @param alpha_max  Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).
-#' @param numerator_bh Bool (default:TRUE) Define the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
+#' @param numerator_bh Bool (default:TRUE) Define the numerator of the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
 #' @return Numeric vector with weights of test-set hypotheses
 #' @export
 uncensored_betamix_weighter <- function(Ps, Xs, Xs_new, tau, alpha,
                                       formula_rhs="~X1+X2",
                                       pi1_min = 0.01,
                                       pi1_max = 0.9,
+                                      alpha_min = 0.1,
                                       alpha_max = 0.9,
                                       maxiter = 200,
                                       numerator_bh = TRUE,
@@ -267,11 +277,12 @@ uncensored_betamix_weighter <- function(Ps, Xs, Xs_new, tau, alpha,
   gamma_glm_fit <- gamma_glm_basic_em(Ps, Xs, maxiter = maxiter, formula_rhs=formula_rhs, tau_pi0=0.5,
                                                   pi1_min = pi1_min,
                                                   pi1_max = pi1_max,
+                                                  alpha_min = alpha_min,
                                                   alpha_max = alpha_max, ...)
   alphas_new <- predict(gamma_glm_fit$glm_mus, newdata=Xs_new, type="link")
   pi1s_new <- predict(gamma_glm_fit$glm_pi1s, newdata=Xs_new, type="response")
   
-  alphas_new <- pmin(alphas_new, alpha_max)
+  alphas_new <- pmax(alpha_min, pmin(alphas_new, alpha_max))
   pi1s_new <- pmax(pi1_min, pmin(pi1_max, pi1s_new))
   
   weights_betamix(alpha, pi1s_new, alphas_new, numerator_bh = numerator_bh)
@@ -284,7 +295,7 @@ uncensored_betamix_weighter <- function(Ps, Xs, Xs_new, tau, alpha,
 #' @param Xs       Numeric vector or matrix with covariates
 #' @param alpha    Significance level at which to apply method
 #' @param Storey   Bool (default: FALSE): is the procedure pi0 adaptive or not?
-#' @param numerator_bh Bool (default:TRUE) Define the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
+#' @param numerator_bh Bool (default:TRUE) Define the numerator of the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE
 #' @param ...      Other arguments passed to `uncensored_betamix_weighter`
 #'
 #' @return         Binary vector of rejected/non-rejected hypotheses.

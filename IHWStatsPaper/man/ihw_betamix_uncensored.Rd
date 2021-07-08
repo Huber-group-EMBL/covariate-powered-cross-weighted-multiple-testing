@@ -15,7 +15,7 @@ ihw_betamix_uncensored(Ps, Xs, alpha, Storey = FALSE, numerator_bh = TRUE, ...)
 
 \item{Storey}{Bool (default: FALSE): is the procedure pi0 adaptive or not?}
 
-\item{numerator_bh}{Bool (default:TRUE) Define the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE}
+\item{numerator_bh}{Bool (default:TRUE) Define the numerator of the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE}
 
 \item{...}{Other arguments passed to `uncensored_betamix_weighter`}
 }

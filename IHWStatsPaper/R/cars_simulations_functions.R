@@ -49,7 +49,8 @@ cars_ttest_data <- function(m=10000, k=10, n_x=50, n_y=50,
 #' @return Data.frame with columns `pvalue` and `t_2` (ancillary --independent under the null-- testing statistic)
 #' @export
 #' @examples
-#' cars_example_data <- cars_ttest_data(m=10000, k=2000, n_x=50, n_y=50, mu_x_1 = 0.5, mu_x_2 = 0.25, mu_y_2 = 0.25)
+#' cars_example_data <- cars_ttest_data(m=10000, k=2000, n_x=50, 
+#'              n_y=50, mu_x_1 = 0.5, mu_x_2 = 0.25, mu_y_2 = 0.25)
 #' cars_example_preprocess <- with(cars_example_data, CARS_preprocess(x, y, var_mat))
 CARS_preprocess <- function(X,Y, variance){
   n_x <- ncol(X); m <- nrow(X);

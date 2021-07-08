@@ -12,6 +12,7 @@ gamma_glm_basic_em(
   tau_pi0 = 0.5,
   pi1_min = 0.01,
   pi1_max = 0.9,
+  alpha_min = 0.1,
   alpha_max = 0.9
 )
 }
@@ -29,6 +30,8 @@ gamma_glm_basic_em(
 \item{pi1_min}{Numeric in (0,1),  lower bound on conditionally probability of being an alternative (default: 0.01).}
 
 \item{pi1_max}{Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).}
+
+\item{alpha_min}{Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.1).}
 
 \item{alpha_max}{Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).}
 }

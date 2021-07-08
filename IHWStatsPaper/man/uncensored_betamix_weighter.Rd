@@ -13,6 +13,7 @@ uncensored_betamix_weighter(
   formula_rhs = "~X1+X2",
   pi1_min = 0.01,
   pi1_max = 0.9,
+  alpha_min = 0.1,
   alpha_max = 0.9,
   maxiter = 200,
   numerator_bh = TRUE,
@@ -34,11 +35,13 @@ uncensored_betamix_weighter(
 
 \item{pi1_max}{Numeric in (0,1), upper bound on conditionally probability of being a null (default: 0.9).}
 
+\item{alpha_min}{Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.1).}
+
 \item{alpha_max}{Numeric in (0,1), upper bound on parameter of alternative Beta distribution (default: 0.9).}
 
 \item{maxiter}{(Default: 200) Total number of iterations to run the EM algorithm}
 
-\item{numerator_bh}{Bool (default:TRUE) Define the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE}
+\item{numerator_bh}{Bool (default:TRUE) Define the numerator of the marginal FDR as sum pi_0(X_i) t(X_i), if FALSE, or sum t(X_i) if TRUE}
 }
 \value{
 Numeric vector with weights of test-set hypotheses

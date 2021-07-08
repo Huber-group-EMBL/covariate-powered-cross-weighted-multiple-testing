@@ -31,6 +31,9 @@ This directory contains `IHWStatsPaper`, a R package wrapping/implementing the d
 devtools::install_github("Huber-group-EMBL/covariate-powered-cross-weighted-multiple-testing",
                          subdir="IHWStatsPaper")
 ```
+
+The simulations in the paper were implemented based on the following [commit](https://github.com/Huber-group-EMBL/covariate-powered-cross-weighted-multiple-testing/tree/81784986c1975c476df3bb82317daa112047dca3) of the package.
+
 ### **scripts/**
 R scripts that run the simulations  (see in folder for details).
  
