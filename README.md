@@ -1,9 +1,11 @@
 # covariate-powered-cross-weighted-multiple-testing
 
-This repository serves as companion to the following preprint:
+This repository serves as companion to the following paper:
 
 
-> *Covariate-powered cross weighted multiple testing*, N. Ignatiadis and W.Huber [[arXiv]](https://arxiv.org/abs/1701.05179)
+> N. Ignatiadis and W. Huber (2021), **Covariate-powered cross weighted multiple testing**, Journal of the Royal Statistical Society: Series B (JRSS-B)
+
+The paper is also available on [[arXiv]](https://arxiv.org/abs/1701.05179).
 
 
 All numerical results and figures in the aforementioned paper are made third-party reproducible herein.
