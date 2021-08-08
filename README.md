@@ -3,7 +3,7 @@
 This repository serves as companion to the following paper:
 
 
-> N. Ignatiadis and W. Huber (2021), **Covariate-powered cross weighted multiple testing**, Journal of the Royal Statistical Society: Series B (JRSS-B)
+> N. Ignatiadis and W. Huber (2021), **Covariate powered cross-weighted multiple testing**, Journal of the Royal Statistical Society: Series B (JRSS-B)
 
 The paper is also available on [[arXiv]](https://arxiv.org/abs/1701.05179).
 
